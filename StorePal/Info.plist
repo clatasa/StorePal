@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string></string>
+	<key>CFBundleExecutable</key>
+	<string></string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>StorePal uses your location to find nearby grocery stores.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>StorePal needs background location access to alert you when you pass a saved store.</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>NSLocationWhenInUseUsageDescription</key>
+			<string>StorePal uses your location to find nearby grocery stores.</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string></string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
