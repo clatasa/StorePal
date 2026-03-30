@@ -17,6 +17,9 @@
 		EF70CC682F76C71A0078DCB9 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC5F2F76C71A0078DCB9 /* SettingsSheet.swift */; };
 		EF70CC692F76C71A0078DCB9 /* SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = EF70CC5A2F76C71A0078DCB9 /* SETUP.md */; };
 		EF70CC6E2F76FFEB0078DCB9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF70CC6D2F76FFEB0078DCB9 /* Assets.xcassets */; };
+		EF70CC702F7B373F0078DCB9 /* GroceryList.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC6F2F7B373F0078DCB9 /* GroceryList.swift */; };
+		EF70CC722F7B374F0078DCB9 /* ListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC712F7B374F0078DCB9 /* ListViewModel.swift */; };
+		EF70CC742F7B374F0078DCB9 /* ListDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC732F7B374F0078DCB9 /* ListDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +54,9 @@
 		EF70CC5F2F76C71A0078DCB9 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		EF70CC6A2F76DB530078DCB9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = Info.plist; path = StorePal/Info.plist; sourceTree = "<group>"; };
 		EF70CC6D2F76FFEB0078DCB9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EF70CC6F2F7B373F0078DCB9 /* GroceryList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroceryList.swift; sourceTree = "<group>"; };
+		EF70CC712F7B374F0078DCB9 /* ListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListViewModel.swift; sourceTree = "<group>"; };
+		EF70CC732F7B374F0078DCB9 /* ListDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				EF70CC552F76C71A0078DCB9 /* GroceryStore.swift */,
+				EF70CC6F2F7B373F0078DCB9 /* GroceryList.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -132,6 +139,7 @@
 			isa = PBXGroup;
 			children = (
 				EF70CC5B2F76C71A0078DCB9 /* StoreViewModel.swift */,
+				EF70CC712F7B374F0078DCB9 /* ListViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -142,6 +150,7 @@
 				EF70CC5D2F76C71A0078DCB9 /* HomeView.swift */,
 				EF70CC5E2F76C71A0078DCB9 /* SearchView.swift */,
 				EF70CC5F2F76C71A0078DCB9 /* SettingsSheet.swift */,
+				EF70CC732F7B374F0078DCB9 /* ListDetailView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -284,6 +293,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				EF70CC612F76C71A0078DCB9 /* StorePalApp.swift in Sources */,
+				EF70CC702F7B373F0078DCB9 /* GroceryList.swift in Sources */,
+				EF70CC722F7B374F0078DCB9 /* ListViewModel.swift in Sources */,
+				EF70CC742F7B374F0078DCB9 /* ListDetailView.swift in Sources */,
 				EF70CC622F76C71A0078DCB9 /* StoreViewModel.swift in Sources */,
 				EF70CC632F76C71A0078DCB9 /* LocationService.swift in Sources */,
 				EF70CC642F76C71A0078DCB9 /* HomeView.swift in Sources */,

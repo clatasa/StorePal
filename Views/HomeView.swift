@@ -2,9 +2,14 @@ internal import SwiftUI
 import MapKit
 
 struct HomeView: View {
+    @EnvironmentObject var listViewModel: ListViewModel
     @EnvironmentObject var viewModel: StoreViewModel
     @State private var showSearch   = false
     @State private var showSettings = false
+    
+    @State private var selectedList: GroceryList?
+    @State private var showAddList  = false
+    @State private var newListName     = ""
     @State private var miniMapPosition: MapCameraPosition = .automatic
 
     var body: some View {
@@ -13,6 +18,7 @@ struct HomeView: View {
                 VStack(spacing: 20) {
                     miniMapCard
                     favoritesCard
+                    listsCard
                 }
                 .padding()
             }
@@ -35,14 +41,26 @@ struct HomeView: View {
             .sheet(isPresented: $showSettings) {
                 SettingsSheet().environmentObject(viewModel)
             }
+            .sheet(item: $selectedList) { list in
+                ListDetailView(listId: list.id)
+                    .environmentObject(listViewModel)
+            }
+            // Add list alert
+            .alert("New List", isPresented: $showAddList) {
+                TextField("List name", text: $newListName)
+                Button("Create") {
+                    let trimmed = newListName.trimmingCharacters(in: .whitespaces)
+                    if !trimmed.isEmpty { listViewModel.addList(name: trimmed) }
+                    newListName = ""
+                }
+                Button("Cancel", role: .cancel) { newListName = "" }
+            }
         }
         .task {
             await viewModel.requestPermissions()
             viewModel.locationService.startUpdatingLocation()
         }
-        // Update mini map when favorites change
         .onChange(of: viewModel.favorites) { updateMiniMapPosition() }
-        // Update mini map when location first arrives (no favorites yet)
         .onChange(of: viewModel.locationService.currentLocation) {
             if viewModel.favorites.isEmpty { updateMiniMapPosition() }
         }
@@ -93,11 +111,10 @@ struct HomeView: View {
         .background(.ultraThinMaterial, in: Capsule())
     }
 
-    // MARK: - Favorites card
+    // MARK: - My Stores card
 
     private var favoritesCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
             HStack {
                 Text("My Stores")
                     .font(.headline)
@@ -112,7 +129,6 @@ struct HomeView: View {
             Divider()
 
             if viewModel.favorites.isEmpty {
-                // Empty state
                 VStack(spacing: 8) {
                     Image(systemName: "star.slash")
                         .font(.title2)
@@ -122,7 +138,7 @@ struct HomeView: View {
                         .foregroundStyle(.secondary)
                     Text("Tap the search icon to find stores nearby.")
                         .font(.caption)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
@@ -135,7 +151,88 @@ struct HomeView: View {
                         canAdd: true,
                         onToggle: { viewModel.toggleFavorite(store) }
                     )
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            viewModel.toggleFavorite(store)
+                        } label: {
+                            Label("Remove from Saved", systemImage: "star.slash")
+                        }
+                    }
                     if store != viewModel.favorites.last {
+                        Divider().padding(.leading, 16)
+                    }
+                }
+            }
+        }
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: - My Lists card
+
+    private var listsCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("My Lists")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    newListName = ""
+                    showAddList = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(.blue)
+                        .imageScale(.large)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            if listViewModel.lists.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "list.bullet.clipboard")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                    Text("No lists yet")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("Tap + to create your first list.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 28)
+            } else {
+                ForEach(listViewModel.lists) { list in
+                    Button { selectedList = list } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(list.name)
+                                    .font(.body.weight(.medium))
+                                    .foregroundStyle(.primary)
+                                let n = list.activeCount
+                                Text(n == 0 ? "All done" : "\(n) item\(n == 1 ? "" : "s") remaining")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(Color.secondary)
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 12)
+                    }
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            listViewModel.deleteList(list)
+                        } label: {
+                            Label("Delete List", systemImage: "trash")
+                        }
+                    }
+                    if list != listViewModel.lists.last {
                         Divider().padding(.leading, 16)
                     }
                 }
@@ -183,7 +280,7 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Reusable store row (used in both HomeView and SearchView)
+// MARK: - Reusable store row (used in HomeView and SearchView)
 
 struct StoreRow: View {
     let store: GroceryStore
