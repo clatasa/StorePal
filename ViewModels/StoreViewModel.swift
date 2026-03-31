@@ -32,7 +32,8 @@ class StoreViewModel: ObservableObject {
     // MARK: - Computed
 
     var favoriteIds: Set<String> { Set(favorites.map { $0.id }) }
-    var canAddFavorite: Bool { favorites.count < 3 }
+    let maxFavorites = 5
+    var canAddFavorite: Bool { favorites.count < maxFavorites }
 
     // MARK: - Init
 

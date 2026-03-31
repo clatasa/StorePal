@@ -119,7 +119,7 @@ struct HomeView: View {
                 Text("My Stores")
                     .font(.headline)
                 Spacer()
-                Text("\(viewModel.favorites.count) / 3")
+                Text("\(viewModel.favorites.count) / \(viewModel.maxFavorites)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -308,6 +308,7 @@ struct StoreRow: View {
             .buttonStyle(.plain)
             .disabled(!isFavorite && !canAdd)
         }
+        .contentShape(Rectangle())
         .padding(.horizontal)
         .padding(.vertical, 12)
     }
