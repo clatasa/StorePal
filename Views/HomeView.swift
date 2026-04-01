@@ -18,7 +18,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 10) {
+                VStack(spacing: 20) {
                     miniMapCard
                     listsCard
                     favoritesCard
@@ -121,7 +121,7 @@ struct HomeView: View {
                 .font(.caption2.weight(.medium))
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.vertical, 12)
         .background(.ultraThinMaterial, in: Capsule())
     }
 
@@ -156,7 +156,7 @@ struct HomeView: View {
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 15)
+                .padding(.vertical, 28)
             } else {
                 ForEach(sortedFavorites) { store in
                     let boundList = listViewModel.lists.first { $0.boundStoreId == store.id }
@@ -245,7 +245,7 @@ struct HomeView: View {
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 15)
+                .padding(.vertical, 28)
             } else {
                 ForEach(listViewModel.lists) { list in
                     Button { selectedList = list } label: {

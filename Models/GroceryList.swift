@@ -19,11 +19,22 @@ struct GroceryList: Identifiable, Codable, Equatable {
 
      var boundStoreId: String?
 
-     init(id: UUID = UUID(), name: String, items: [ListItem] = [], boundStoreId: String? = nil) {
-         self.id = id
-         self.name = name
-         self.items = items
+     // MARK: Shared Lists
+     var isShared: Bool = false
+     /// CloudKit record name for the SharedList record (nil if not yet shared / joined)
+     var cloudListId: String?
+     /// true = I created this shared list; false = I joined someone else's
+     var isMine: Bool = true
+
+     init(id: UUID = UUID(), name: String, items: [ListItem] = [], boundStoreId: String? = nil,
+          isShared: Bool = false, cloudListId: String? = nil, isMine: Bool = true) {
+         self.id          = id
+         self.name        = name
+         self.items       = items
          self.boundStoreId = boundStoreId
+         self.isShared    = isShared
+         self.cloudListId = cloudListId
+         self.isMine      = isMine
      }
 
      /// Number of unchecked items

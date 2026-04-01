@@ -85,7 +85,6 @@ struct SearchView: View {
                     }
                 }
             }
-            .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
             .padding(.horizontal, 12)
