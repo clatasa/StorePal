@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var showSearch   = false
     @State private var showSettings = false
     
+    @ObservedObject private var locationService = LocationService.shared
     @State private var selectedList: GroceryList?
     @State private var showAddList  = false
     @State private var newListName     = ""
@@ -152,7 +153,7 @@ struct HomeView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15)
             } else {
-                ForEach(viewModel.favorites) { store in
+                ForEach(sortedFavorites) { store in
                     let boundList = listViewModel.lists.first { $0.boundStoreId == store.id }
                     StoreRow(
                         store: store,
@@ -185,7 +186,7 @@ struct HomeView: View {
                             Label("Remove from Saved", systemImage: "star.slash")
                         }
                     }
-                    if store != viewModel.favorites.last {
+                    if store != sortedFavorites.last {
                         Divider().padding(.leading, 16)
                     }
                 }
@@ -266,6 +267,18 @@ struct HomeView: View {
             }
         }
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: - Distance-sorted stores (display only)
+
+    private var sortedFavorites: [GroceryStore] {
+        guard let location = viewModel.locationService.currentLocation else {
+            return viewModel.favorites
+        }
+        return viewModel.favorites.sorted {
+            location.distance(from: CLLocation(latitude: $0.latitude, longitude: $0.longitude)) <
+            location.distance(from: CLLocation(latitude: $1.latitude, longitude: $1.longitude))
+        }
     }
 
     // MARK: - Mini map position helper
