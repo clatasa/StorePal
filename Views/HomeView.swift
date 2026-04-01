@@ -15,10 +15,10 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 10) {
                     miniMapCard
-                    favoritesCard
                     listsCard
+                    favoritesCard
                 }
                 .padding()
             }
@@ -44,6 +44,7 @@ struct HomeView: View {
             .sheet(item: $selectedList) { list in
                 ListDetailView(listId: list.id)
                     .environmentObject(listViewModel)
+                    .environmentObject(viewModel)
             }
             // Add list alert
             .alert("New List", isPresented: $showAddList) {
@@ -124,7 +125,7 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal)
-            .padding(.vertical, 12)
+            .padding(.vertical, 6)
 
             Divider()
 
@@ -142,14 +143,17 @@ struct HomeView: View {
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 28)
+                .padding(.vertical, 15)
             } else {
                 ForEach(viewModel.favorites) { store in
+                    let boundList = listViewModel.lists.first { $0.boundStoreId == store.id }
                     StoreRow(
                         store: store,
                         isFavorite: true,
                         canAdd: true,
-                        onToggle: { viewModel.toggleFavorite(store) }
+                        onToggle: { viewModel.toggleFavorite(store) },
+                        boundListName: boundList?.name,
+                        onOpenList: boundList.map { list in { selectedList = list } }
                     )
                     .contextMenu {
                         Button(role: .destructive) {
@@ -203,7 +207,7 @@ struct HomeView: View {
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 28)
+                .padding(.vertical, 15)
             } else {
                 ForEach(listViewModel.lists) { list in
                     Button { selectedList = list } label: {
@@ -287,6 +291,8 @@ struct StoreRow: View {
     let isFavorite: Bool
     let canAdd: Bool
     let onToggle: () -> Void
+    var boundListName: String? = nil
+    var onOpenList: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -297,8 +303,16 @@ struct StoreRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                if let listName = boundListName {
+                    Label(listName, systemImage: "list.bullet")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
             }
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture { onOpenList?() }
+
             Button(action: onToggle) {
                 Image(systemName: isFavorite ? "star.fill" : "star")
                     .foregroundStyle(isFavorite ? Color.yellow : Color.secondary)

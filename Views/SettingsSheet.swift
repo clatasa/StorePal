@@ -64,7 +64,7 @@ struct SettingsSheet: View {
 
                 // ── Status ────────────────────────────────────────────────
                 Section("Status") {
-                    LabeledContent("Saved Stores",  value: "\(viewModel.favorites.count) / 3")
+                    LabeledContent("Saved Stores",  value: "\(viewModel.favorites.count) / \(viewModel.maxFavorites)")
                     LabeledContent("Detection",     value: "CLRegion Monitoring")
                     LabeledContent("Search Area",   value: "5 km radius")
                 }

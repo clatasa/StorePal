@@ -29,9 +29,27 @@ class ListViewModel: ObservableObject {
 
     // MARK: - Item management
 
-    func addItem(to listId: UUID, name: String) {
+    func addItem(to listId: UUID, name: String, quantity: Int? = nil,
+                 weightValue: Double? = nil, weightUnit: WeightUnit = .lbs, note: String? = nil) {
         guard let i = lists.firstIndex(where: { $0.id == listId }) else { return }
-        lists[i].items.append(ListItem(name: name))
+        lists[i].items.append(ListItem(name: name, quantity: quantity,
+                                       weightValue: weightValue, weightUnit: weightUnit, note: note))
+    }
+
+    func updateItem(_ item: ListItem, in listId: UUID) {
+        guard let li = lists.firstIndex(where: { $0.id == listId }),
+              let ii = lists[li].items.firstIndex(where: { $0.id == item.id }) else { return }
+        lists[li].items[ii] = item
+    }
+
+    func bindList(_ listId: UUID, to storeId: String?) {
+        guard let i = lists.firstIndex(where: { $0.id == listId }) else { return }
+        lists[i].boundStoreId = storeId
+    }
+
+    func moveItem(in listId: UUID, from source: IndexSet, to destination: Int) {
+        guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
+        lists[li].items.move(fromOffsets: source, toOffset: destination)
     }
 
     func toggleCheck(_ item: ListItem, in listId: UUID) {
