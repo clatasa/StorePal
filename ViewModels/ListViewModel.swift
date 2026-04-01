@@ -56,6 +56,7 @@ class ListViewModel: ObservableObject {
         guard let li = lists.firstIndex(where: { $0.id == listId }),
               let ii = lists[li].items.firstIndex(where: { $0.id == item.id }) else { return }
         lists[li].items[ii].isChecked.toggle()
+        lists[li].items[ii].purchasedDate = lists[li].items[ii].isChecked ? Date() : nil
     }
 
     func toggleStaple(_ item: ListItem, in listId: UUID) {
@@ -76,6 +77,7 @@ class ListViewModel: ObservableObject {
         for ii in lists[li].items.indices {
             if lists[li].items[ii].isStaple && lists[li].items[ii].isChecked {
                 lists[li].items[ii].isChecked = false
+                lists[li].items[ii].purchasedDate = nil
             }
         }
         lists[li].items.removeAll { $0.isChecked && !$0.isStaple }

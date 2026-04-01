@@ -40,9 +40,11 @@ struct GroceryList: Identifiable, Codable, Equatable {
      var weightValue: Double?
      var weightUnit: WeightUnit
      var note: String?
+     var purchasedDate: Date?
 
      init(id: UUID = UUID(), name: String, isChecked: Bool = false, isStaple: Bool = false,
-          quantity: Int? = nil, weightValue: Double? = nil, weightUnit: WeightUnit = .lbs, note: String? = nil) {
+          quantity: Int? = nil, weightValue: Double? = nil, weightUnit: WeightUnit = .lbs,
+          note: String? = nil, purchasedDate: Date? = nil) {
          self.id = id
          self.name = name
          self.isChecked = isChecked
@@ -51,6 +53,7 @@ struct GroceryList: Identifiable, Codable, Equatable {
          self.weightValue = weightValue
          self.weightUnit = weightUnit
          self.note = note
+         self.purchasedDate = purchasedDate
      }
 
      /// Secondary display line combining quantity, weight, and note when present.

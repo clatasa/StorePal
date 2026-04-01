@@ -4,21 +4,40 @@ import CoreLocation
 struct SettingsSheet: View {
     @EnvironmentObject var viewModel: StoreViewModel
     @Environment(\.dismiss) var dismiss
+    @AppStorage("useImperial") private var useImperial: Bool = false
 
     private var locationStatus: CLAuthorizationStatus {
         viewModel.locationService.authorizationStatus
     }
+
+    // MARK: - Unit helpers
+
+    private func formatRadius(_ meters: Double) -> String {
+        useImperial
+            ? String(format: "%.2f mi", meters * 0.000621371)
+            : "\(Int(meters)) m"
+    }
+
+    private var sliderMinLabel: String { useImperial ? "0.06 mi" : "100 m" }
+    private var sliderMaxLabel: String { useImperial ? "1.24 mi" : "2 km" }
+    private var searchAreaLabel: String { useImperial ? "3.1 mi radius" : "5 km radius" }
 
     var body: some View {
         NavigationStack {
             Form {
                 // ── Geo-fence radius ──────────────────────────────────────
                 Section {
+                    Picker("Distance Units", selection: $useImperial) {
+                        Text("Meters").tag(false)
+                        Text("Miles").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Text("Alert Radius")
                             Spacer()
-                            Text("\(Int(viewModel.geofenceRadius)) m")
+                            Text(formatRadius(viewModel.geofenceRadius))
                                 .foregroundStyle(.secondary)
                                 .monospacedDigit()
                         }
@@ -29,9 +48,9 @@ struct SettingsSheet: View {
                         )
                         .tint(.blue)
                         HStack {
-                            Text("100 m")
+                            Text(sliderMinLabel)
                             Spacer()
-                            Text("2 km")
+                            Text(sliderMaxLabel)
                         }
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -39,7 +58,7 @@ struct SettingsSheet: View {
                 } header: {
                     Text("Geo-fence Radius")
                 } footer: {
-                    Text("You'll be alerted when you're within \(Int(viewModel.geofenceRadius)) m of a saved store. Changes apply to all stores immediately.")
+                    Text("You'll be alerted when you're within \(formatRadius(viewModel.geofenceRadius)) of a saved store. Changes apply to all stores immediately.")
                 }
 
                 // ── Permissions ───────────────────────────────────────────
@@ -66,7 +85,7 @@ struct SettingsSheet: View {
                 Section("Status") {
                     LabeledContent("Saved Stores",  value: "\(viewModel.favorites.count) / \(viewModel.maxFavorites)")
                     LabeledContent("Detection",     value: "CLRegion Monitoring")
-                    LabeledContent("Search Area",   value: "5 km radius")
+                    LabeledContent("Search Area",   value: searchAreaLabel)
                 }
             }
             .navigationTitle("Settings")

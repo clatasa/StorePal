@@ -116,9 +116,17 @@ struct ListDetailView: View {
             if let store = boundStore {
                 Section("Linked Store") {
                     Button {
-                        let item = MKMapItem(placemark: MKPlacemark(coordinate: store.coordinate))
-                        item.name = store.name
-                        item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
+                        let lat = store.latitude
+                        let lng = store.longitude
+                        let googleURL = URL(string: "comgooglemaps://?daddr=\(lat),\(lng)&directionsmode=driving")
+                        if let googleURL, UIApplication.shared.canOpenURL(googleURL) {
+                            UIApplication.shared.open(googleURL)
+                        } else {
+                            // Fall back to Apple Maps if Google Maps app is not installed
+                            let item = MKMapItem(placemark: MKPlacemark(coordinate: store.coordinate))
+                            item.name = store.name
+                            item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
+                        }
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "storefront")
@@ -258,6 +266,12 @@ struct ItemRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                if item.isChecked, let date = item.purchasedDate {
+                    Text("Checked off \(date.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -309,6 +323,7 @@ struct ItemEditSheet: View {
     @State private var weightText: String
     @State private var weightUnit: WeightUnit
     @State private var note: String
+    @State private var purchasedDate: Date
 
     init(item: ListItem?, listId: UUID, isNew: Bool) {
         self.originalItem = item
@@ -321,6 +336,7 @@ struct ItemEditSheet: View {
         _weightText = State(initialValue: item?.weightValue.map { String(format: "%g", $0) } ?? "")
         _weightUnit = State(initialValue: item?.weightUnit ?? .lbs)
         _note = State(initialValue: item?.note ?? "")
+        _purchasedDate = State(initialValue: item?.purchasedDate ?? Date())
     }
 
     var body: some View {
@@ -358,6 +374,13 @@ struct ItemEditSheet: View {
                     TextField("Optional description", text: $note, axis: .vertical)
                         .lineLimit(3, reservesSpace: false)
                 }
+
+                if originalItem?.isChecked == true {
+                    Section("Purchase Date") {
+                        DatePicker("Date checked off", selection: $purchasedDate, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                    }
+                }
             }
             .navigationTitle(isNew ? "New Item" : "Edit Item")
             .navigationBarTitleDisplayMode(.inline)
@@ -393,6 +416,7 @@ struct ItemEditSheet: View {
             updated.weightValue = parsedWeight
             updated.weightUnit = weightUnit
             updated.note = parsedNote
+            if updated.isChecked { updated.purchasedDate = purchasedDate }
             listViewModel.updateItem(updated, in: listId)
         }
 

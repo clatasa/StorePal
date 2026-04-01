@@ -11,6 +11,7 @@ struct HomeView: View {
     @State private var showAddList  = false
     @State private var newListName     = ""
     @State private var miniMapPosition: MapCameraPosition = .automatic
+    @State private var selectedMapStore: GroceryStore?
 
     var body: some View {
         NavigationStack {
@@ -64,6 +65,12 @@ struct HomeView: View {
         .onChange(of: viewModel.favorites) { updateMiniMapPosition() }
         .onChange(of: viewModel.locationService.currentLocation) {
             if viewModel.favorites.isEmpty { updateMiniMapPosition() }
+        }
+        .onChange(of: selectedList) { _, newValue in
+            if newValue == nil {
+                selectedMapStore = nil
+                updateMiniMapPosition()
+            }
         }
     }
 
@@ -152,6 +159,22 @@ struct HomeView: View {
                         isFavorite: true,
                         canAdd: true,
                         onToggle: { viewModel.toggleFavorite(store) },
+                        isSelected: selectedMapStore?.id == store.id,
+                        onTap: {
+                            withAnimation {
+                                if selectedMapStore?.id == store.id {
+                                    selectedMapStore = nil
+                                    updateMiniMapPosition()
+                                } else {
+                                    selectedMapStore = store
+                                    miniMapPosition = .region(MKCoordinateRegion(
+                                        center: store.coordinate,
+                                        latitudinalMeters: 1500,
+                                        longitudinalMeters: 1500
+                                    ))
+                                }
+                            }
+                        },
                         boundListName: boundList?.name,
                         onOpenList: boundList.map { list in { selectedList = list } }
                     )
@@ -248,6 +271,7 @@ struct HomeView: View {
     // MARK: - Mini map position helper
 
     private func updateMiniMapPosition() {
+        guard selectedMapStore == nil else { return }
         let favs = viewModel.favorites
 
         if favs.isEmpty {
@@ -291,6 +315,8 @@ struct StoreRow: View {
     let isFavorite: Bool
     let canAdd: Bool
     let onToggle: () -> Void
+    var isSelected: Bool = false
+    var onTap: (() -> Void)? = nil
     var boundListName: String? = nil
     var onOpenList: (() -> Void)? = nil
 
@@ -303,15 +329,18 @@ struct StoreRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                if let listName = boundListName {
-                    Label(listName, systemImage: "list.bullet")
-                        .font(.caption)
-                        .foregroundStyle(.blue)
+                if let listName = boundListName, let onOpenList {
+                    Button(action: onOpenList) {
+                        Label(listName, systemImage: "list.bullet")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .onTapGesture { onOpenList?() }
+            .onTapGesture { onTap?() }
 
             Button(action: onToggle) {
                 Image(systemName: isFavorite ? "star.fill" : "star")
@@ -325,5 +354,6 @@ struct StoreRow: View {
         .contentShape(Rectangle())
         .padding(.horizontal)
         .padding(.vertical, 12)
+        .background(isSelected ? Color.blue.opacity(0.07) : Color.clear)
     }
 }
