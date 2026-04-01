@@ -58,7 +58,7 @@ struct SettingsSheet: View {
                 } header: {
                     Text("Geo-fence Radius")
                 } footer: {
-                    Text("You'll be alerted when you're within \(formatRadius(viewModel.geofenceRadius)) of a saved store. Changes apply to all stores immediately.")
+                    Text("Default alert radius for all stores. Applies immediately to stores without a custom radius. Long-press a store on the home screen to set a per-store override.")
                 }
 
                 // ── Permissions ───────────────────────────────────────────

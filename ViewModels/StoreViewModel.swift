@@ -32,7 +32,7 @@ class StoreViewModel: ObservableObject {
     // MARK: - Computed
 
     var favoriteIds: Set<String> { Set(favorites.map { $0.id }) }
-    let maxFavorites = 5
+    let maxFavorites = 10
     var canAddFavorite: Bool { favorites.count < maxFavorites }
 
     // MARK: - Init
@@ -60,7 +60,7 @@ class StoreViewModel: ObservableObject {
 
     // MARK: - Search (MapKit MKLocalSearch)
 
-    func searchNearby() async {
+    func searchNearby(query: String = "grocery store") async {
         // If no location yet, ensure permission is granted then request a one-shot fix.
         if locationService.currentLocation == nil {
             let status = locationService.authorizationStatus
@@ -84,7 +84,7 @@ class StoreViewModel: ObservableObject {
         errorMessage = nil
 
         let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = "grocery store"
+        request.naturalLanguageQuery = query.trimmingCharacters(in: .whitespaces).isEmpty ? "grocery store" : query
         request.resultTypes = .pointOfInterest
         request.region = MKCoordinateRegion(
             center: location.coordinate,
@@ -125,11 +125,19 @@ class StoreViewModel: ObservableObject {
 
     // MARK: - Geo-fence sync
 
+    func setRadiusOverride(for storeId: String, radius: Double?) {
+        guard let i = favorites.firstIndex(where: { $0.id == storeId }) else { return }
+        favorites[i].geofenceRadiusOverride = radius
+        // Re-register this store's geofence immediately with the new effective radius
+        locationService.stopMonitoring(storeId: storeId)
+        locationService.startMonitoring(store: favorites[i], radius: favorites[i].geofenceRadiusOverride ?? geofenceRadius)
+    }
+
     private func syncGeofences() {
         let monitoredIds = Set(locationService.monitoredRegions.map { $0.identifier })
         // Start monitoring for newly added favorites
         for store in favorites where !monitoredIds.contains(store.id) {
-            locationService.startMonitoring(store: store, radius: geofenceRadius)
+            locationService.startMonitoring(store: store, radius: store.geofenceRadiusOverride ?? geofenceRadius)
         }
         // Stop monitoring removed favorites
         for region in locationService.monitoredRegions where !favoriteIds.contains(region.identifier) {
@@ -138,9 +146,9 @@ class StoreViewModel: ObservableObject {
     }
 
     private func resyncGeofences() {
-        // Called when radius changes: rebuild all regions with new radius
+        // Called when global radius changes: rebuild all regions (respecting per-store overrides)
         locationService.stopMonitoringAll()
-        favorites.forEach { locationService.startMonitoring(store: $0, radius: geofenceRadius) }
+        favorites.forEach { locationService.startMonitoring(store: $0, radius: $0.geofenceRadiusOverride ?? geofenceRadius) }
     }
 
     // MARK: - Persistence

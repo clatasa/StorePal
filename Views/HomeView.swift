@@ -9,6 +9,7 @@ struct HomeView: View {
     
     @ObservedObject private var locationService = LocationService.shared
     @State private var selectedList: GroceryList?
+    @State private var storeForRadiusEdit: GroceryStore?
     @State private var showAddList  = false
     @State private var newListName     = ""
     @State private var miniMapPosition: MapCameraPosition = .automatic
@@ -46,6 +47,10 @@ struct HomeView: View {
             .sheet(item: $selectedList) { list in
                 ListDetailView(listId: list.id)
                     .environmentObject(listViewModel)
+                    .environmentObject(viewModel)
+            }
+            .sheet(item: $storeForRadiusEdit) { store in
+                StoreRadiusSheet(store: store, defaultRadius: viewModel.geofenceRadius)
                     .environmentObject(viewModel)
             }
             // Add list alert
@@ -180,6 +185,15 @@ struct HomeView: View {
                         onOpenList: boundList.map { list in { selectedList = list } }
                     )
                     .contextMenu {
+                        Button {
+                            storeForRadiusEdit = store
+                        } label: {
+                            Label(
+                                store.geofenceRadiusOverride != nil ? "Edit Custom Radius" : "Set Custom Radius",
+                                systemImage: "location.circle"
+                            )
+                        }
+                        Divider()
                         Button(role: .destructive) {
                             viewModel.toggleFavorite(store)
                         } label: {
@@ -368,5 +382,80 @@ struct StoreRow: View {
         .padding(.horizontal)
         .padding(.vertical, 12)
         .background(isSelected ? Color.blue.opacity(0.07) : Color.clear)
+    }
+}
+
+// MARK: - Store radius sheet
+
+struct StoreRadiusSheet: View {
+    let store: GroceryStore
+    let defaultRadius: Double
+    @EnvironmentObject var viewModel: StoreViewModel
+    @AppStorage("useImperial") private var useImperial: Bool = false
+    @Environment(\.dismiss) var dismiss
+
+    @State private var hasOverride: Bool
+    @State private var radius: Double
+
+    init(store: GroceryStore, defaultRadius: Double) {
+        self.store = store
+        self.defaultRadius = defaultRadius
+        _hasOverride = State(initialValue: store.geofenceRadiusOverride != nil)
+        _radius = State(initialValue: store.geofenceRadiusOverride ?? defaultRadius)
+    }
+
+    private func formatRadius(_ meters: Double) -> String {
+        useImperial ? String(format: "%.2f mi", meters * 0.000621371) : "\(Int(meters)) m"
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Toggle("Custom Radius", isOn: $hasOverride.animation())
+                    if hasOverride {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Alert Radius")
+                                Spacer()
+                                Text(formatRadius(radius))
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                            }
+                            Slider(value: $radius, in: 100...2000, step: 50)
+                                .tint(.blue)
+                            HStack {
+                                Text(useImperial ? "0.06 mi" : "100 m")
+                                Spacer()
+                                Text(useImperial ? "1.24 mi" : "2 km")
+                            }
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text(store.name)
+                } footer: {
+                    if hasOverride {
+                        Text("This store will alert you within \(formatRadius(radius)), overriding the global setting.")
+                    } else {
+                        Text("Using the global radius (\(formatRadius(defaultRadius))). Enable to set a custom radius for this store only.")
+                    }
+                }
+            }
+            .navigationTitle("Alert Radius")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        viewModel.setRadiusOverride(for: store.id, radius: hasOverride ? radius : nil)
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }

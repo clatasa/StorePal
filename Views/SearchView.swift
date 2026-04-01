@@ -5,6 +5,7 @@ struct SearchView: View {
     @EnvironmentObject var viewModel: StoreViewModel
     @Environment(\.dismiss) var dismiss
     @State private var mapPosition: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var searchQuery: String = "grocery store"
 
     var body: some View {
         NavigationStack {
@@ -37,13 +38,13 @@ struct SearchView: View {
                         ProgressView()
                     } else {
                         Button("Search Here") {
-                            Task { await viewModel.searchNearby() }
+                            Task { await viewModel.searchNearby(query: searchQuery) }
                         }
                     }
                 }
             }
         }
-        .task { await viewModel.searchNearby() }
+        .task { await viewModel.searchNearby(query: searchQuery) }
         // Show error as alert
         .alert("Search Error", isPresented: Binding(
             get: { viewModel.errorMessage != nil },
@@ -64,7 +65,33 @@ struct SearchView: View {
                 .fill(.secondary.opacity(0.4))
                 .frame(width: 36, height: 5)
                 .padding(.top, 8)
-                .padding(.bottom, 4)
+                .padding(.bottom, 8)
+
+            // Query field
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                TextField("Search for…", text: $searchQuery)
+                    .submitLabel(.search)
+                    .onSubmit {
+                        Task { await viewModel.searchNearby(query: searchQuery) }
+                    }
+                if !searchQuery.isEmpty {
+                    Button {
+                        searchQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+
+            Divider()
 
             if viewModel.isSearching {
                 ProgressView("Searching for stores…")
@@ -75,7 +102,7 @@ struct SearchView: View {
                     Image(systemName: "mappin.slash")
                         .font(.title3)
                         .foregroundStyle(.secondary)
-                    Text("No stores found nearby")
+                    Text("No results found")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -84,7 +111,7 @@ struct SearchView: View {
             } else {
                 // Capacity warning
                 if !viewModel.canAddFavorite {
-                    Label("All 3 slots filled. Remove a store to add another.", systemImage: "info.circle")
+                    Label("All \(viewModel.maxFavorites) slots filled. Remove a store to add another.", systemImage: "info.circle")
                         .font(.caption)
                         .foregroundStyle(.orange)
                         .padding(.horizontal)
