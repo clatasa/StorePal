@@ -56,7 +56,10 @@ class ListViewModel: ObservableObject {
         guard let li = lists.firstIndex(where: { $0.id == listId }),
               let ii = lists[li].items.firstIndex(where: { $0.id == item.id }) else { return }
         lists[li].items[ii].isChecked.toggle()
-        lists[li].items[ii].purchasedDate = lists[li].items[ii].isChecked ? Date() : nil
+        // When checking: stamp today. When unchecking: keep the last date so history is preserved.
+        if lists[li].items[ii].isChecked {
+            lists[li].items[ii].purchasedDate = Date()
+        }
     }
 
     func toggleStaple(_ item: ListItem, in listId: UUID) {

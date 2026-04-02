@@ -57,6 +57,7 @@
 		EF70CC6F2F7B373F0078DCB9 /* GroceryList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroceryList.swift; sourceTree = "<group>"; };
 		EF70CC712F7B374F0078DCB9 /* ListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListViewModel.swift; sourceTree = "<group>"; };
 		EF70CC732F7B374F0078DCB9 /* ListDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDetailView.swift; sourceTree = "<group>"; };
+		EFA057822F7DC68C007BD972 /* StorePal.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = StorePal.entitlements; path = StorePal/StorePal.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +88,7 @@
 		EF70CC052F76C63B0078DCB9 = {
 			isa = PBXGroup;
 			children = (
+				EFA057822F7DC68C007BD972 /* StorePal.entitlements */,
 				EF70CC6D2F76FFEB0078DCB9 /* Assets.xcassets */,
 				EF70CC6A2F76DB530078DCB9 /* Info.plist */,
 				EF70CC0F2F76C63B0078DCB9 /* Products */,
@@ -460,6 +462,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = StorePal/StorePal.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -495,6 +498,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = StorePal/StorePal.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

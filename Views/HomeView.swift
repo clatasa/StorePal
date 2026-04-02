@@ -159,7 +159,7 @@ struct HomeView: View {
                 .padding(.vertical, 28)
             } else {
                 ForEach(sortedFavorites) { store in
-                    let boundList = listViewModel.lists.first { $0.boundStoreId == store.id }
+                    let storeBoundLists = listViewModel.lists.filter { $0.boundStoreId == store.id }
                     StoreRow(
                         store: store,
                         isFavorite: true,
@@ -181,8 +181,7 @@ struct HomeView: View {
                                 }
                             }
                         },
-                        boundListName: boundList?.name,
-                        onOpenList: boundList.map { list in { selectedList = list } }
+                        boundLists: storeBoundLists.map { list in (name: list.name, action: { selectedList = list }) }
                     )
                     .contextMenu {
                         Button {
@@ -258,6 +257,11 @@ struct HomeView: View {
                                 Text(n == 0 ? "All done" : "\(n) item\(n == 1 ? "" : "s") remaining")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
+                                if let storeName = viewModel.favorites.first(where: { $0.id == list.boundStoreId })?.name {
+                                    Label(storeName, systemImage: "storefront")
+                                        .font(.caption)
+                                        .foregroundStyle(.blue)
+                                }
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -344,8 +348,8 @@ struct StoreRow: View {
     let onToggle: () -> Void
     var isSelected: Bool = false
     var onTap: (() -> Void)? = nil
-    var boundListName: String? = nil
-    var onOpenList: (() -> Void)? = nil
+    /// All lists bound to this store (name + tap action each).
+    var boundLists: [(name: String, action: () -> Void)] = []
 
     var body: some View {
         HStack(spacing: 12) {
@@ -356,9 +360,9 @@ struct StoreRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                if let listName = boundListName, let onOpenList {
-                    Button(action: onOpenList) {
-                        Label(listName, systemImage: "list.bullet")
+                ForEach(boundLists.indices, id: \.self) { i in
+                    Button(action: boundLists[i].action) {
+                        Label(boundLists[i].name, systemImage: "list.bullet")
                             .font(.caption)
                             .foregroundStyle(.blue)
                     }

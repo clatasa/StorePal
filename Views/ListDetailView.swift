@@ -267,8 +267,10 @@ struct ItemRow: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if item.isChecked, let date = item.purchasedDate {
-                    Text("Checked off \(date.formatted(date: .abbreviated, time: .omitted))")
+                if let date = item.purchasedDate {
+                    Text(item.isChecked
+                         ? "Checked off \(date.formatted(date: .abbreviated, time: .omitted))"
+                         : "Last checked \(date.formatted(date: .abbreviated, time: .omitted))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -375,7 +377,7 @@ struct ItemEditSheet: View {
                         .lineLimit(3, reservesSpace: false)
                 }
 
-                if originalItem?.isChecked == true {
+                if originalItem?.purchasedDate != nil {
                     Section("Purchase Date") {
                         DatePicker("Date checked off", selection: $purchasedDate, displayedComponents: .date)
                             .datePickerStyle(.compact)
