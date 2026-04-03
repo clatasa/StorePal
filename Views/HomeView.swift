@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var storeForRadiusEdit: GroceryStore?
     @State private var showAddList  = false
     @State private var newListName     = ""
+    @State private var showJoinList = false
     @State private var miniMapPosition: MapCameraPosition = .automatic
     @State private var selectedMapStore: GroceryStore?
 
@@ -52,6 +53,11 @@ struct HomeView: View {
             .sheet(item: $storeForRadiusEdit) { store in
                 StoreRadiusSheet(store: store, defaultRadius: viewModel.geofenceRadius)
                     .environmentObject(viewModel)
+            }
+            .sheet(isPresented: $showJoinList) {
+                JoinListSheet { code in
+                    try await listViewModel.joinList(shareCode: code)
+                }
             }
             // Add list alert
             .alert("New List", isPresented: $showAddList) {
@@ -217,6 +223,13 @@ struct HomeView: View {
                     .font(.headline)
                 Spacer()
                 Button {
+                    showJoinList = true
+                } label: {
+                    Image(systemName: "person.badge.plus")
+                        .foregroundStyle(.blue)
+                        .imageScale(.large)
+                }
+                Button {
                     newListName = ""
                     showAddList = true
                 } label: {
@@ -250,9 +263,16 @@ struct HomeView: View {
                     Button { selectedList = list } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(list.name)
-                                    .font(.body.weight(.medium))
-                                    .foregroundStyle(.primary)
+                                HStack(spacing: 6) {
+                                    Text(list.name)
+                                        .font(.body.weight(.medium))
+                                        .foregroundStyle(.primary)
+                                    if list.isShared {
+                                        Image(systemName: "person.2.fill")
+                                            .font(.caption2)
+                                            .foregroundStyle(.blue)
+                                    }
+                                }
                                 let n = list.activeCount
                                 Text(n == 0 ? "All done" : "\(n) item\(n == 1 ? "" : "s") remaining")
                                     .font(.caption)

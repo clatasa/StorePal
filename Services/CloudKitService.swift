@@ -302,6 +302,41 @@ private extension CKDatabase {
     }
 }
 
+// MARK: - ListItem ↔ ListItemPayload bridge
+
+extension ListItem {
+    func payload(sortOrder: Int = 0) -> ListItemPayload {
+        ListItemPayload(
+            itemId: id.uuidString,
+            name: name,
+            isChecked: isChecked,
+            isStaple: isStaple,
+            quantity: quantity,
+            weightValue: weightValue,
+            weightUnit: weightUnit.rawValue,
+            note: note,
+            purchasedDate: purchasedDate,
+            sortOrder: sortOrder
+        )
+    }
+}
+
+extension ListItemPayload {
+    var asListItem: ListItem {
+        ListItem(
+            id: UUID(uuidString: itemId) ?? UUID(),
+            name: name,
+            isChecked: isChecked,
+            isStaple: isStaple,
+            quantity: quantity,
+            weightValue: weightValue,
+            weightUnit: weightUnit.flatMap(WeightUnit.init(rawValue:)) ?? .lbs,
+            note: note,
+            purchasedDate: purchasedDate
+        )
+    }
+}
+
 // MARK: - ListItemPayload (CloudKit ↔ ListItem bridge)
 
 struct ListItemPayload {

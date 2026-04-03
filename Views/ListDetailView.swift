@@ -15,6 +15,11 @@ struct ListDetailView: View {
     @State private var itemToEdit: ListItem?
     @State private var isAddingDetailed = false
     @State private var showStorePicker = false
+    @State private var showBarcodeScanner = false
+    @State private var shareCode: String?
+    @State private var isSharingLoading = false
+    @State private var sharingError: String?
+    @State private var showLeaveConfirm = false
 
     private var list: GroceryList? {
         listViewModel.lists.first { $0.id == listId }
@@ -55,6 +60,36 @@ struct ListDetailView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
+                        // Sharing
+                        if list?.isShared == true {
+                            Button(role: .destructive) {
+                                showLeaveConfirm = true
+                            } label: {
+                                Label(list?.isMine == true ? "Stop Sharing" : "Leave List",
+                                      systemImage: "person.badge.minus")
+                            }
+                        } else {
+                            Button {
+                                guard let l = list else { return }
+                                isSharingLoading = true
+                                Task {
+                                    do {
+                                        let code = try await listViewModel.shareList(l)
+                                        shareCode = code
+                                    } catch {
+                                        sharingError = error.localizedDescription
+                                    }
+                                    isSharingLoading = false
+                                }
+                            } label: {
+                                Label(isSharingLoading ? "Sharing…" : "Share List",
+                                      systemImage: "person.2.wave.2")
+                            }
+                            .disabled(isSharingLoading)
+                        }
+
+                        Divider()
+
                         Button {
                             showStorePicker = true
                         } label: {
@@ -104,6 +139,34 @@ struct ListDetailView: View {
                     onSelect: { storeId in listViewModel.bindList(listId, to: storeId) }
                 )
             }
+            .sheet(isPresented: $showBarcodeScanner) {
+                BarcodeScannerView { name, note in
+                    listViewModel.addItem(to: listId, name: name, note: note)
+                }
+            }
+            .sheet(item: $shareCode) { code in
+                ShareCodeSheet(code: code, listName: list?.name ?? "")
+            }
+            .alert("Sharing Error", isPresented: Binding(
+                get: { sharingError != nil },
+                set: { if !$0 { sharingError = nil } }
+            )) {
+                Button("OK") { sharingError = nil }
+            } message: {
+                Text(sharingError ?? "")
+            }
+            .confirmationDialog(
+                list?.isMine == true ? "Stop sharing this list? All collaborators will lose access." : "Leave this shared list?",
+                isPresented: $showLeaveConfirm,
+                titleVisibility: .visible
+            ) {
+                Button(list?.isMine == true ? "Stop Sharing" : "Leave List", role: .destructive) {
+                    guard let l = list else { return }
+                    Task { await listViewModel.leaveSharedList(l) }
+                    dismiss()
+                }
+                Button("Cancel", role: .cancel) {}
+            }
         }
     }
 
@@ -143,6 +206,37 @@ struct ListDetailView: View {
                             Spacer()
                             Image(systemName: "arrow.triangle.turn.up.right.circle")
                                 .foregroundStyle(.blue)
+                        }
+                    }
+                }
+            }
+
+            // Shared list banner
+            if list.isShared {
+                Section("Shared List") {
+                    HStack(spacing: 10) {
+                        Image(systemName: "person.2.wave.2")
+                            .foregroundStyle(.blue)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(list.isMine ? "You shared this list" : "Joined list")
+                                .font(.subheadline.weight(.medium))
+                            Text("Changes sync automatically")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if list.isMine, let code = list.shareCode {
+                            Button {
+                                shareCode = code
+                            } label: {
+                                Label("Invite", systemImage: "square.and.arrow.up")
+                                    .font(.caption.weight(.semibold))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(Color.blue.opacity(0.1), in: Capsule())
+                                    .foregroundStyle(.blue)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -201,6 +295,14 @@ struct ListDetailView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+
+            Button {
+                showBarcodeScanner = true
+            } label: {
+                Image(systemName: "barcode.viewfinder")
+                    .font(.title2)
+                    .foregroundStyle(.blue)
+            }
 
             Button {
                 isAddingDetailed = true

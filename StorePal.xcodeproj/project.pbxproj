@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EF56D6922F7F114E00552E8F /* BarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF56D6912F7F114E00552E8F /* BarcodeScannerView.swift */; };
+		EF56D6942F7F12E200552E8F /* CloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF56D6932F7F12E200552E8F /* CloudKitService.swift */; };
+		EF56D6962F7F12F300552E8F /* OpenFoodFactsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF56D6952F7F12F300552E8F /* OpenFoodFactsService.swift */; };
 		EF70CC612F76C71A0078DCB9 /* StorePalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC532F76C71A0078DCB9 /* StorePalApp.swift */; };
 		EF70CC622F76C71A0078DCB9 /* StoreViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC5B2F76C71A0078DCB9 /* StoreViewModel.swift */; };
 		EF70CC632F76C71A0078DCB9 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC572F76C71A0078DCB9 /* LocationService.swift */; };
@@ -40,6 +43,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		EF56D6912F7F114E00552E8F /* BarcodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerView.swift; sourceTree = "<group>"; };
+		EF56D6932F7F12E200552E8F /* CloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitService.swift; sourceTree = "<group>"; };
+		EF56D6952F7F12F300552E8F /* OpenFoodFactsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenFoodFactsService.swift; sourceTree = "<group>"; };
 		EF70CC0E2F76C63B0078DCB9 /* StorePal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StorePal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF70CC1D2F76C63B0078DCB9 /* StorePalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StorePalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF70CC272F76C63B0078DCB9 /* StorePalUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StorePalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -133,6 +139,8 @@
 			children = (
 				EF70CC572F76C71A0078DCB9 /* LocationService.swift */,
 				EF70CC582F76C71A0078DCB9 /* NotificationService.swift */,
+				EF56D6932F7F12E200552E8F /* CloudKitService.swift */,
+				EF56D6952F7F12F300552E8F /* OpenFoodFactsService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -153,6 +161,7 @@
 				EF70CC5E2F76C71A0078DCB9 /* SearchView.swift */,
 				EF70CC5F2F76C71A0078DCB9 /* SettingsSheet.swift */,
 				EF70CC732F7B374F0078DCB9 /* ListDetailView.swift */,
+				EF56D6912F7F114E00552E8F /* BarcodeScannerView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -294,15 +303,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EF56D6922F7F114E00552E8F /* BarcodeScannerView.swift in Sources */,
 				EF70CC612F76C71A0078DCB9 /* StorePalApp.swift in Sources */,
 				EF70CC702F7B373F0078DCB9 /* GroceryList.swift in Sources */,
 				EF70CC722F7B374F0078DCB9 /* ListViewModel.swift in Sources */,
 				EF70CC742F7B374F0078DCB9 /* ListDetailView.swift in Sources */,
 				EF70CC622F76C71A0078DCB9 /* StoreViewModel.swift in Sources */,
+				EF56D6942F7F12E200552E8F /* CloudKitService.swift in Sources */,
 				EF70CC632F76C71A0078DCB9 /* LocationService.swift in Sources */,
 				EF70CC642F76C71A0078DCB9 /* HomeView.swift in Sources */,
 				EF70CC652F76C71A0078DCB9 /* NotificationService.swift in Sources */,
 				EF70CC662F76C71A0078DCB9 /* GroceryStore.swift in Sources */,
+				EF56D6962F7F12F300552E8F /* OpenFoodFactsService.swift in Sources */,
 				EF70CC672F76C71A0078DCB9 /* SearchView.swift in Sources */,
 				EF70CC682F76C71A0078DCB9 /* SettingsSheet.swift in Sources */,
 			);

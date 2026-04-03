@@ -25,9 +25,11 @@ struct GroceryList: Identifiable, Codable, Equatable {
      var cloudListId: String?
      /// true = I created this shared list; false = I joined someone else's
      var isMine: Bool = true
+     /// The 6-char invite code (only set on the owner's device)
+     var shareCode: String?
 
      init(id: UUID = UUID(), name: String, items: [ListItem] = [], boundStoreId: String? = nil,
-          isShared: Bool = false, cloudListId: String? = nil, isMine: Bool = true) {
+          isShared: Bool = false, cloudListId: String? = nil, isMine: Bool = true, shareCode: String? = nil) {
          self.id          = id
          self.name        = name
          self.items       = items
@@ -35,6 +37,7 @@ struct GroceryList: Identifiable, Codable, Equatable {
          self.isShared    = isShared
          self.cloudListId = cloudListId
          self.isMine      = isMine
+         self.shareCode   = shareCode
      }
 
      /// Number of unchecked items

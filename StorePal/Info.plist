@@ -12,6 +12,8 @@
 	<string></string>
 	<key>CFBundleExecutable</key>
 	<string></string>
+	<key>NSCameraUsageDescription</key>
+	<string>StorePal uses your camera to scan product barcodes.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>StorePal uses your location to find nearby grocery stores.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

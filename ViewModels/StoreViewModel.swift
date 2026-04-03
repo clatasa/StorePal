@@ -1,6 +1,7 @@
 import Foundation
 import MapKit
 import Combine
+import zlib
 internal import SwiftUI
 
 
@@ -97,11 +98,12 @@ class StoreViewModel: ObservableObject {
             searchResults = response.mapItems.compactMap { item in
                 guard let name = item.name else { return nil }
                 let coord = item.placemark.coordinate
+                let address = item.placemark.title ?? item.placemark.thoroughfare ?? ""
                 return GroceryStore(
-                    // Stable ID: name + truncated coordinates
-                    id: "\(name)_\(String(format: "%.4f", coord.latitude))_\(String(format: "%.4f", coord.longitude))",
+                    // Stable ID: name + CRC32 hash of address
+                    id: "\(name)_\(crc32(address))",
                     name: name,
-                    address: item.placemark.title ?? item.placemark.thoroughfare ?? "",
+                    address: address,
                     latitude: coord.latitude,
                     longitude: coord.longitude
                 )
@@ -167,5 +169,15 @@ class StoreViewModel: ObservableObject {
         }
         // Ensure geo-fences match persisted state (e.g. after reinstall)
         syncGeofences()
+    }
+
+    // MARK: - Helpers
+
+    private func crc32(_ string: String) -> String {
+        let data = Data(string.utf8)
+        let checksum = data.withUnsafeBytes { ptr in
+            zlib.crc32(0, ptr.bindMemory(to: Bytef.self).baseAddress, uInt(data.count))
+        }
+        return String(format: "%08X", checksum)
     }
 }

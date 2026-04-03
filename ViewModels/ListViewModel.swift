@@ -31,15 +31,20 @@ class ListViewModel: ObservableObject {
 
     func addItem(to listId: UUID, name: String, quantity: Int? = nil,
                  weightValue: Double? = nil, weightUnit: WeightUnit = .lbs, note: String? = nil) {
-        guard let i = lists.firstIndex(where: { $0.id == listId }) else { return }
-        lists[i].items.append(ListItem(name: name, quantity: quantity,
-                                       weightValue: weightValue, weightUnit: weightUnit, note: note))
+        guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
+        let item = ListItem(name: name, quantity: quantity,
+                            weightValue: weightValue, weightUnit: weightUnit, note: note)
+        lists[li].items.append(item)
+        let list = lists[li]
+        let index = list.items.count - 1
+        pushItemChange(item, sortOrder: index, in: list)
     }
 
     func updateItem(_ item: ListItem, in listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }),
               let ii = lists[li].items.firstIndex(where: { $0.id == item.id }) else { return }
         lists[li].items[ii] = item
+        pushItemChange(item, sortOrder: ii, in: lists[li])
     }
 
     func bindList(_ listId: UUID, to storeId: String?) {
@@ -50,26 +55,29 @@ class ListViewModel: ObservableObject {
     func moveItem(in listId: UUID, from source: IndexSet, to destination: Int) {
         guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
         lists[li].items.move(fromOffsets: source, toOffset: destination)
+        pushAllItems(for: lists[li])
     }
 
     func toggleCheck(_ item: ListItem, in listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }),
               let ii = lists[li].items.firstIndex(where: { $0.id == item.id }) else { return }
         lists[li].items[ii].isChecked.toggle()
-        // When checking: stamp today. When unchecking: keep the last date so history is preserved.
         if lists[li].items[ii].isChecked {
             lists[li].items[ii].purchasedDate = Date()
         }
+        pushItemChange(lists[li].items[ii], sortOrder: ii, in: lists[li])
     }
 
     func toggleStaple(_ item: ListItem, in listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }),
               let ii = lists[li].items.firstIndex(where: { $0.id == item.id }) else { return }
         lists[li].items[ii].isStaple.toggle()
+        pushItemChange(lists[li].items[ii], sortOrder: ii, in: lists[li])
     }
 
     func deleteItem(_ item: ListItem, from listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
+        pushItemDelete(itemId: item.id, in: lists[li])
         lists[li].items.removeAll { $0.id == item.id }
     }
 
@@ -77,6 +85,10 @@ class ListViewModel: ObservableObject {
     /// Staple checked items are unchecked (reset) so they remain on the list.
     func clearCompleted(from listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
+        // Delete non-staple checked items from cloud
+        for item in lists[li].items where item.isChecked && !item.isStaple {
+            pushItemDelete(itemId: item.id, in: lists[li])
+        }
         for ii in lists[li].items.indices {
             if lists[li].items[ii].isStaple && lists[li].items[ii].isChecked {
                 lists[li].items[ii].isChecked = false
@@ -84,6 +96,93 @@ class ListViewModel: ObservableObject {
             }
         }
         lists[li].items.removeAll { $0.isChecked && !$0.isStaple }
+        pushAllItems(for: lists[li])
+    }
+
+    // MARK: - Sharing
+
+    func shareList(_ list: GroceryList) async throws -> String {
+        await CloudKitService.shared.checkAvailability()
+        guard CloudKitService.shared.isAvailable else { throw CloudKitError.notAuthenticated }
+
+        let payloads = list.items.enumerated().map { index, item in item.payload(sortOrder: index) }
+        let code = try await CloudKitService.shared.shareList(
+            name: list.name, listId: list.id, items: payloads)
+
+        guard let i = lists.firstIndex(where: { $0.id == list.id }) else { return code }
+        let cloudListId = "list-\(list.id.uuidString)"
+        lists[i].isShared = true
+        lists[i].cloudListId = cloudListId
+        lists[i].isMine = true
+        lists[i].shareCode = code
+
+        try? await CloudKitService.shared.subscribeToListChanges(cloudListId: cloudListId)
+        return code
+    }
+
+    func joinList(shareCode: String) async throws {
+        await CloudKitService.shared.checkAvailability()
+        guard CloudKitService.shared.isAvailable else { throw CloudKitError.notAuthenticated }
+
+        let (cloudListId, listName) = try await CloudKitService.shared.joinList(shareCode: shareCode)
+
+        // Guard against joining the same list twice
+        guard !lists.contains(where: { $0.cloudListId == cloudListId }) else { return }
+
+        let payloads = try await CloudKitService.shared.fetchItems(cloudListId: cloudListId)
+        var newList = GroceryList(name: listName)
+        newList.isShared = true
+        newList.cloudListId = cloudListId
+        newList.isMine = false
+        newList.items = payloads.map { $0.asListItem }
+        lists.append(newList)
+
+        try? await CloudKitService.shared.subscribeToListChanges(cloudListId: cloudListId)
+    }
+
+    /// Pull latest items from CloudKit for every shared list. Call on launch and on silent push.
+    func syncSharedLists() async {
+        for list in lists where list.isShared {
+            guard let cloudListId = list.cloudListId else { continue }
+            guard let payloads = try? await CloudKitService.shared.fetchItems(cloudListId: cloudListId) else { continue }
+            guard let i = lists.firstIndex(where: { $0.id == list.id }) else { continue }
+            lists[i].items = payloads.map { $0.asListItem }
+        }
+    }
+
+    /// Owner: deletes CloudKit records and local list. Participant: leaves and removes local copy.
+    func leaveSharedList(_ list: GroceryList) async {
+        guard let cloudListId = list.cloudListId else { return }
+        try? await CloudKitService.shared.leaveList(cloudListId: cloudListId, isOwner: list.isMine)
+        await CloudKitService.shared.unsubscribe(cloudListId: cloudListId)
+        deleteList(list)
+    }
+
+    // MARK: - Cloud push helpers (fire-and-forget)
+
+    private func pushItemChange(_ item: ListItem, sortOrder: Int, in list: GroceryList) {
+        guard list.isShared, let cloudListId = list.cloudListId else { return }
+        Task { try? await CloudKitService.shared.saveItem(item.payload(sortOrder: sortOrder),
+                                                          cloudListId: cloudListId,
+                                                          sortOrder: sortOrder) }
+    }
+
+    private func pushItemDelete(itemId: UUID, in list: GroceryList) {
+        guard list.isShared, let cloudListId = list.cloudListId else { return }
+        Task { try? await CloudKitService.shared.deleteItem(cloudListId: cloudListId,
+                                                            itemId: itemId.uuidString) }
+    }
+
+    private func pushAllItems(for list: GroceryList) {
+        guard list.isShared, let cloudListId = list.cloudListId else { return }
+        let snapshot = list.items
+        Task {
+            for (index, item) in snapshot.enumerated() {
+                try? await CloudKitService.shared.saveItem(item.payload(sortOrder: index),
+                                                           cloudListId: cloudListId,
+                                                           sortOrder: index)
+            }
+        }
     }
 
     // MARK: - Persistence
