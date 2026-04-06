@@ -5,6 +5,14 @@ struct SettingsSheet: View {
     @EnvironmentObject var viewModel: StoreViewModel
     @Environment(\.dismiss) var dismiss
     @AppStorage("useImperial") private var useImperial: Bool = false
+    @AppStorage("geofenceAlertBehavior") private var alertBehaviorRaw: String = GeofenceAlertBehavior.always.rawValue
+
+    private var alertBehavior: Binding<GeofenceAlertBehavior> {
+        Binding(
+            get: { GeofenceAlertBehavior(rawValue: alertBehaviorRaw) ?? .always },
+            set: { alertBehaviorRaw = $0.rawValue }
+        )
+    }
 
     private var locationStatus: CLAuthorizationStatus {
         viewModel.locationService.authorizationStatus
@@ -56,9 +64,37 @@ struct SettingsSheet: View {
                         .foregroundStyle(.secondary)
                     }
                 } header: {
-                    Text("Geo-fence Radius")
+                    Text("Store Geo-fence")
                 } footer: {
                     Text("Default alert radius for all stores. Applies immediately to stores without a custom radius. Long-press a store on the home screen to set a per-store override.")
+                }
+
+                // ── Alert behavior ────────────────────────────────────────
+                Section {
+                    ForEach(GeofenceAlertBehavior.allCases, id: \.self) { option in
+                        Button {
+                            alertBehavior.wrappedValue = option
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(option.label)
+                                        .foregroundStyle(.primary)
+                                    Text(option.detail)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if alertBehavior.wrappedValue == option {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Store Alert Behavior")
+                } footer: {
+                    Text("Controls when you receive a notification upon entering a store's geo-fence.")
                 }
 
                 // ── Permissions ───────────────────────────────────────────

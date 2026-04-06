@@ -409,6 +409,75 @@ struct StoreRow: View {
     }
 }
 
+// MARK: - Join shared list sheet
+
+struct JoinListSheet: View {
+    let onJoin: (String) async throws -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var code = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @FocusState private var isFieldFocused: Bool
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("e.g. A3KX7Q", text: $code)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .focused($isFieldFocused)
+                        .onChange(of: code) { _, newValue in
+                            code = String(newValue.filter{$0.isLetter || $0.isNumber}.prefix(6)).uppercased()
+                        }
+                } header: {
+                    Text("Share Code")
+                } footer: {
+                    Text("Enter the 6-character code from the person who shared the list with you.")
+                }
+
+                if let errorMessage {
+                    Section {
+                        Label(errorMessage, systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(.red)
+                            .font(.footnote)
+                    }
+                }
+            }
+            .navigationTitle("Join a List")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .disabled(isLoading)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if isLoading {
+                        ProgressView()
+                    } else {
+                        Button("Join") {
+                            errorMessage = nil
+                            isLoading = true
+                            Task {
+                                do {
+                                    try await onJoin(code)
+                                    dismiss()
+                                } catch {
+                                    errorMessage = error.localizedDescription
+                                }
+                                isLoading = false
+                            }
+                        }
+                        .disabled(code.count < 6)
+                    }
+                }
+            }
+            .onAppear { isFieldFocused = true }
+        }
+    }
+}
+
 // MARK: - Store radius sheet
 
 struct StoreRadiusSheet: View {

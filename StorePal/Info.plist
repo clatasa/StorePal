@@ -6,20 +6,6 @@
 	<array>
 		<string>comgooglemaps</string>
 	</array>
-	<key>LSApplicationCategoryType</key>
-	<string></string>
-	<key>CFBundleIdentifier</key>
-	<string></string>
-	<key>CFBundleExecutable</key>
-	<string></string>
-	<key>NSCameraUsageDescription</key>
-	<string>StorePal uses your camera to scan product barcodes.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>StorePal uses your location to find nearby grocery stores.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>StorePal needs background location access to alert you when you pass a saved store.</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

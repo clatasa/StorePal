@@ -5,14 +5,15 @@ import Combine
 // MARK: - Errors
 
 enum CloudKitError: LocalizedError {
-    case notAuthenticated
+    case notAuthenticated(String?)
     case listNotFound
     case saveFailed(Error)
     case fetchFailed(Error)
 
     var errorDescription: String? {
         switch self {
-        case .notAuthenticated:    return "Sign in to iCloud in Settings to use Shared Lists."
+        case .notAuthenticated(let msg):
+            return msg ?? "Sign in to iCloud in Settings to use Shared Lists."
         case .listNotFound:        return "No shared list found with that code."
         case .saveFailed(let e):   return "Save failed: \(e.localizedDescription)"
         case .fetchFailed(let e):  return "Fetch failed: \(e.localizedDescription)"
@@ -63,7 +64,7 @@ final class CloudKitService: ObservableObject {
 
     // MARK: Private
 
-    private let container  = CKContainer.default()
+    private let container  = CKContainer(identifier: "iCloud.sparkmine.carlo.storepal")
     private var publicDB: CKDatabase { container.publicCloudDatabase }
 
     private init() {}
@@ -77,10 +78,25 @@ final class CloudKitService: ObservableObject {
             if isAvailable {
                 let id = try await container.userRecordID()
                 currentUserID = id.recordName
+            } else {
+                isAvailable = false
+                currentUserID = nil
+                errorMessage = accountStatusMessage(status)
             }
         } catch {
             isAvailable = false
             currentUserID = nil
+            errorMessage = error.localizedDescription
+            print("[CloudKit] checkAvailability failed: \(error)")
+        }
+    }
+
+    private func accountStatusMessage(_ status: CKAccountStatus) -> String {
+        switch status {
+        case .noAccount:       return "No iCloud account found. Sign in under Settings → iCloud."
+        case .restricted:      return "iCloud access is restricted on this device."
+        case .temporarilyUnavailable: return "iCloud is temporarily unavailable. Try again shortly."
+        default:               return "iCloud is not available."
         }
     }
 
@@ -88,7 +104,7 @@ final class CloudKitService: ObservableObject {
 
     /// Publishes `list` to CloudKit and returns the 6-char share code.
     func shareList(name: String, listId: UUID, items: [ListItemPayload]) async throws -> String {
-        guard let ownerID = currentUserID else { throw CloudKitError.notAuthenticated }
+        guard let ownerID = currentUserID else { throw CloudKitError.notAuthenticated(nil) }
 
         let code = generateShareCode()
         let recordID = CKRecord.ID(recordName: "list-\(listId.uuidString)")
@@ -116,7 +132,7 @@ final class CloudKitService: ObservableObject {
 
     /// Returns the `cloudListId` (record name) for the joined list.
     func joinList(shareCode: String) async throws -> (cloudListId: String, listName: String) {
-        guard let userID = currentUserID else { throw CloudKitError.notAuthenticated }
+        guard let userID = currentUserID else { throw CloudKitError.notAuthenticated(nil) }
 
         let predicate = NSPredicate(format: "%K == %@", Field.shareCode, shareCode.uppercased())
         let query = CKQuery(recordType: RecordType.sharedList, predicate: predicate)
@@ -216,7 +232,7 @@ final class CloudKitService: ObservableObject {
 
     /// Owner: deletes the list and all items.  Participant: removes self from participants.
     func leaveList(cloudListId: String, isOwner: Bool) async throws {
-        guard let userID = currentUserID else { throw CloudKitError.notAuthenticated }
+        guard let userID = currentUserID else { throw CloudKitError.notAuthenticated(nil) }
 
         let listRecordID = CKRecord.ID(recordName: cloudListId)
 

@@ -83,6 +83,7 @@ class ListViewModel: ObservableObject {
 
     /// Non-staple checked items are deleted.
     /// Staple checked items are unchecked (reset) so they remain on the list.
+    /// Recipe items are always unchecked (never deleted) since recipes are reusable.
     func clearCompleted(from listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
         // Delete non-staple checked items from cloud
@@ -96,14 +97,59 @@ class ListViewModel: ObservableObject {
             }
         }
         lists[li].items.removeAll { $0.isChecked && !$0.isStaple }
+        // Reset all checked recipe items so the recipe is ready for next time.
+        for ri in lists[li].recipes.indices {
+            for ii in lists[li].recipes[ri].items.indices where lists[li].recipes[ri].items[ii].isChecked {
+                lists[li].recipes[ri].items[ii].isChecked = false
+                lists[li].recipes[ri].items[ii].purchasedDate = nil
+            }
+        }
         pushAllItems(for: lists[li])
+    }
+
+    // MARK: - Recipe management
+
+    func addRecipe(to listId: UUID, name: String, items: [ListItem]) {
+        guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
+        lists[li].recipes.append(Recipe(name: name, items: items))
+    }
+
+    func deleteRecipe(_ recipe: Recipe, from listId: UUID) {
+        guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
+        lists[li].recipes.removeAll { $0.id == recipe.id }
+    }
+
+    /// Tapping the recipe-level checkbox checks all items if any are unchecked, or unchecks all if all are checked.
+    func toggleCheckRecipe(_ recipe: Recipe, in listId: UUID) {
+        guard let li = lists.firstIndex(where: { $0.id == listId }),
+              let ri = lists[li].recipes.firstIndex(where: { $0.id == recipe.id }) else { return }
+        let allChecked = lists[li].recipes[ri].items.allSatisfy(\.isChecked)
+        let now = Date()
+        for ii in lists[li].recipes[ri].items.indices {
+            lists[li].recipes[ri].items[ii].isChecked = !allChecked
+            if !allChecked {
+                lists[li].recipes[ri].items[ii].purchasedDate = now
+            }
+        }
+    }
+
+    func toggleCheckRecipeItem(_ item: ListItem, recipeId: UUID, in listId: UUID) {
+        guard let li = lists.firstIndex(where: { $0.id == listId }),
+              let ri = lists[li].recipes.firstIndex(where: { $0.id == recipeId }),
+              let ii = lists[li].recipes[ri].items.firstIndex(where: { $0.id == item.id }) else { return }
+        lists[li].recipes[ri].items[ii].isChecked.toggle()
+        if lists[li].recipes[ri].items[ii].isChecked {
+            lists[li].recipes[ri].items[ii].purchasedDate = Date()
+        }
     }
 
     // MARK: - Sharing
 
     func shareList(_ list: GroceryList) async throws -> String {
         await CloudKitService.shared.checkAvailability()
-        guard CloudKitService.shared.isAvailable else { throw CloudKitError.notAuthenticated }
+        guard CloudKitService.shared.isAvailable else {
+            throw CloudKitError.notAuthenticated(CloudKitService.shared.errorMessage)
+        }
 
         let payloads = list.items.enumerated().map { index, item in item.payload(sortOrder: index) }
         let code = try await CloudKitService.shared.shareList(
@@ -122,7 +168,9 @@ class ListViewModel: ObservableObject {
 
     func joinList(shareCode: String) async throws {
         await CloudKitService.shared.checkAvailability()
-        guard CloudKitService.shared.isAvailable else { throw CloudKitError.notAuthenticated }
+        guard CloudKitService.shared.isAvailable else {
+            throw CloudKitError.notAuthenticated(CloudKitService.shared.errorMessage)
+        }
 
         let (cloudListId, listName) = try await CloudKitService.shared.joinList(shareCode: shareCode)
 
@@ -142,6 +190,7 @@ class ListViewModel: ObservableObject {
 
     /// Pull latest items from CloudKit for every shared list. Call on launch and on silent push.
     func syncSharedLists() async {
+        guard lists.contains(where: { $0.isShared }) else { return }
         for list in lists where list.isShared {
             guard let cloudListId = list.cloudListId else { continue }
             guard let payloads = try? await CloudKitService.shared.fetchItems(cloudListId: cloudListId) else { continue }

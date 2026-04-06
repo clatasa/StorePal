@@ -20,6 +20,7 @@ struct ListDetailView: View {
     @State private var isSharingLoading = false
     @State private var sharingError: String?
     @State private var showLeaveConfirm = false
+    @State private var showAddRecipe = false
 
     private var list: GroceryList? {
         listViewModel.lists.first { $0.id == listId }
@@ -144,6 +145,10 @@ struct ListDetailView: View {
                     listViewModel.addItem(to: listId, name: name, note: note)
                 }
             }
+            .sheet(isPresented: $showAddRecipe) {
+                AddRecipeSheet(listId: listId)
+                    .environmentObject(listViewModel)
+            }
             .sheet(isPresented: Binding(
                 get: { shareCode != nil },
                 set: { if !$0 { shareCode = nil } }
@@ -248,7 +253,7 @@ struct ListDetailView: View {
             }
 
             // Items section
-            Section {
+            Section("Items") {
                 if list.items.isEmpty {
                     HStack {
                         Spacer()
@@ -279,6 +284,21 @@ struct ListDetailView: View {
                     }
                     .onMove { from, to in
                         listViewModel.moveItem(in: listId, from: from, to: to)
+                    }
+                }
+            }
+
+            // Recipes section
+            if !list.recipes.isEmpty {
+                Section("Recipes") {
+                    ForEach(list.recipes) { recipe in
+                        RecipeRow(recipe: recipe, listId: listId)
+                            .environmentObject(listViewModel)
+                    }
+                    .onDelete { offsets in
+                        offsets.map { list.recipes[$0] }.forEach {
+                            listViewModel.deleteRecipe($0, from: listId)
+                        }
                     }
                 }
             }
@@ -315,6 +335,14 @@ struct ListDetailView: View {
                 Image(systemName: "text.badge.plus")
                     .font(.title2)
                     .foregroundStyle(.blue)
+            }
+
+            Button {
+                showAddRecipe = true
+            } label: {
+                Image(systemName: "fork.knife.circle")
+                    .font(.title2)
+                    .foregroundStyle(.orange)
             }
 
             Button(action: addItem) {
@@ -593,5 +621,134 @@ struct StorePickerSheet: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Recipe row
+
+struct RecipeRow: View {
+    let recipe: Recipe
+    let listId: UUID
+    @EnvironmentObject var listViewModel: ListViewModel
+    @State private var isExpanded: Bool = true
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            ForEach(recipe.items) { item in
+                HStack(spacing: 12) {
+                    Button {
+                        listViewModel.toggleCheckRecipeItem(item, recipeId: recipe.id, in: listId)
+                    } label: {
+                        Image(systemName: item.isChecked ? "checkmark.square.fill" : "square")
+                            .foregroundStyle(item.isChecked ? Color.secondary : .blue)
+                            .imageScale(.large)
+                    }
+                    .buttonStyle(.plain)
+                    Text(item.name)
+                        .strikethrough(item.isChecked)
+                        .foregroundStyle(item.isChecked ? .secondary : .primary)
+                    Spacer()
+                }
+                .padding(.leading, 4)
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Button {
+                    listViewModel.toggleCheckRecipe(recipe, in: listId)
+                } label: {
+                    Image(systemName: recipe.isComplete ? "checkmark.square.fill" : "square")
+                        .foregroundStyle(recipe.isComplete ? Color.secondary : .blue)
+                        .imageScale(.large)
+                }
+                .buttonStyle(.plain)
+
+                Image(systemName: "fork.knife")
+                    .foregroundStyle(.orange)
+                    .imageScale(.small)
+
+                Text(recipe.name)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(recipe.isComplete ? .secondary : .primary)
+
+                Spacer()
+
+                Text("\(recipe.items.filter(\.isChecked).count)/\(recipe.items.count)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - Add recipe sheet
+
+struct AddRecipeSheet: View {
+    let listId: UUID
+    @EnvironmentObject var listViewModel: ListViewModel
+    @Environment(\.dismiss) var dismiss
+
+    @State private var recipeName = ""
+    @State private var itemName = ""
+    @State private var items: [ListItem] = []
+    @FocusState private var isItemFieldFocused: Bool
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Recipe Name") {
+                    TextField("e.g. Pasta Night", text: $recipeName)
+                }
+
+                Section("Ingredients") {
+                    ForEach(items) { item in
+                        Text(item.name)
+                    }
+                    .onDelete { offsets in
+                        items.remove(atOffsets: offsets)
+                    }
+
+                    HStack {
+                        TextField("Add ingredient…", text: $itemName)
+                            .focused($isItemFieldFocused)
+                            .submitLabel(.done)
+                            .onSubmit { addIngredient() }
+                        Button(action: addIngredient) {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(
+                                    itemName.trimmingCharacters(in: .whitespaces).isEmpty
+                                        ? Color.secondary : Color.blue
+                                )
+                        }
+                        .disabled(itemName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+            }
+            .navigationTitle("New Recipe")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        let name = recipeName.trimmingCharacters(in: .whitespaces)
+                        guard !name.isEmpty, !items.isEmpty else { return }
+                        listViewModel.addRecipe(to: listId, name: name, items: items)
+                        dismiss()
+                    }
+                    .disabled(
+                        recipeName.trimmingCharacters(in: .whitespaces).isEmpty || items.isEmpty
+                    )
+                }
+            }
+        }
+    }
+
+    private func addIngredient() {
+        let name = itemName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        items.append(ListItem(name: name))
+        itemName = ""
+        isItemFieldFocused = true
     }
 }

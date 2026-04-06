@@ -83,14 +83,37 @@ extension LocationService: CLLocationManagerDelegate {
     }
 
     func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
-        // Woken in background: resolve store name directly from UserDefaults,
-        // without depending on the SwiftUI view hierarchy being initialized.
+        // Woken in background: read everything directly from UserDefaults —
+        // the SwiftUI view hierarchy may not be initialized.
         guard
-            let data   = UserDefaults.standard.data(forKey: "favorites"),
-            let stores = try? JSONDecoder().decode([GroceryStore].self, from: data),
-            let store  = stores.first(where: { $0.id == region.identifier })
+            let storeData = UserDefaults.standard.data(forKey: "favorites"),
+            let stores    = try? JSONDecoder().decode([GroceryStore].self, from: storeData),
+            let store     = stores.first(where: { $0.id == region.identifier })
         else { return }
-        NotificationService.shared.sendAlert(for: store)
+
+        let behaviorRaw = UserDefaults.standard.string(forKey: GeofenceAlertBehavior.defaultsKey) ?? "always"
+        let behavior    = GeofenceAlertBehavior(rawValue: behaviorRaw) ?? .always
+
+        switch behavior {
+        case .always:
+            NotificationService.shared.sendAlert(for: store)
+
+        case .linkedList:
+            guard
+                let listData = UserDefaults.standard.data(forKey: "groceryLists"),
+                let lists    = try? JSONDecoder().decode([GroceryList].self, from: listData),
+                let match    = lists.first(where: { $0.boundStoreId == store.id })
+            else { return }
+            NotificationService.shared.sendAlert(for: store, listName: match.name)
+
+        case .itemsNeeded:
+            guard
+                let listData = UserDefaults.standard.data(forKey: "groceryLists"),
+                let lists    = try? JSONDecoder().decode([GroceryList].self, from: listData),
+                let match    = lists.first(where: { $0.boundStoreId == store.id && $0.activeCount > 0 })
+            else { return }
+            NotificationService.shared.sendAlert(for: store, listName: match.name, itemCount: match.activeCount)
+        }
     }
 
     func locationManager(_ manager: CLLocationManager,

@@ -12,10 +12,26 @@ enum WeightUnit: String, Codable, CaseIterable {
     case kg
 }
 
+struct Recipe: Identifiable, Codable, Equatable {
+    let id: UUID
+    var name: String
+    var items: [ListItem]
+
+    init(id: UUID = UUID(), name: String, items: [ListItem] = []) {
+        self.id    = id
+        self.name  = name
+        self.items = items
+    }
+
+    /// True when every item is checked off.
+    var isComplete: Bool { !items.isEmpty && items.allSatisfy(\.isChecked) }
+}
+
 struct GroceryList: Identifiable, Codable, Equatable {
      let id: UUID
      var name: String
      var items: [ListItem]
+     var recipes: [Recipe]
 
      var boundStoreId: String?
 
@@ -28,20 +44,39 @@ struct GroceryList: Identifiable, Codable, Equatable {
      /// The 6-char invite code (only set on the owner's device)
      var shareCode: String?
 
-     init(id: UUID = UUID(), name: String, items: [ListItem] = [], boundStoreId: String? = nil,
-          isShared: Bool = false, cloudListId: String? = nil, isMine: Bool = true, shareCode: String? = nil) {
-         self.id          = id
-         self.name        = name
-         self.items       = items
+     init(id: UUID = UUID(), name: String, items: [ListItem] = [], recipes: [Recipe] = [],
+          boundStoreId: String? = nil, isShared: Bool = false, cloudListId: String? = nil,
+          isMine: Bool = true, shareCode: String? = nil) {
+         self.id           = id
+         self.name         = name
+         self.items        = items
+         self.recipes      = recipes
          self.boundStoreId = boundStoreId
-         self.isShared    = isShared
-         self.cloudListId = cloudListId
-         self.isMine      = isMine
-         self.shareCode   = shareCode
+         self.isShared     = isShared
+         self.cloudListId  = cloudListId
+         self.isMine       = isMine
+         self.shareCode    = shareCode
      }
 
-     /// Number of unchecked items
-     var activeCount: Int { items.filter { !$0.isChecked }.count }
+     // Custom decoder so existing persisted data (which has no "recipes" key) loads cleanly.
+     init(from decoder: Decoder) throws {
+         let c = try decoder.container(keyedBy: CodingKeys.self)
+         id           = try c.decode(UUID.self,       forKey: .id)
+         name         = try c.decode(String.self,     forKey: .name)
+         items        = try c.decode([ListItem].self,  forKey: .items)
+         recipes      = try c.decodeIfPresent([Recipe].self, forKey: .recipes) ?? []
+         boundStoreId = try c.decodeIfPresent(String.self,  forKey: .boundStoreId)
+         isShared     = try c.decodeIfPresent(Bool.self,    forKey: .isShared)     ?? false
+         cloudListId  = try c.decodeIfPresent(String.self,  forKey: .cloudListId)
+         isMine       = try c.decodeIfPresent(Bool.self,    forKey: .isMine)       ?? true
+         shareCode    = try c.decodeIfPresent(String.self,  forKey: .shareCode)
+     }
+
+     /// Number of unchecked standalone items + unchecked recipe items.
+     var activeCount: Int {
+         items.filter { !$0.isChecked }.count +
+         recipes.flatMap(\.items).filter { !$0.isChecked }.count
+     }
  }
 
  struct ListItem: Identifiable, Codable, Equatable {
