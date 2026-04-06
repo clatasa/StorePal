@@ -114,6 +114,12 @@ class ListViewModel: ObservableObject {
         lists[li].recipes.append(Recipe(name: name, items: items))
     }
 
+    func updateRecipe(_ recipe: Recipe, in listId: UUID) {
+        guard let li = lists.firstIndex(where: { $0.id == listId }),
+              let ri = lists[li].recipes.firstIndex(where: { $0.id == recipe.id }) else { return }
+        lists[li].recipes[ri] = recipe
+    }
+
     func deleteRecipe(_ recipe: Recipe, from listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
         lists[li].recipes.removeAll { $0.id == recipe.id }

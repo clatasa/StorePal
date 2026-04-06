@@ -21,6 +21,7 @@ struct ListDetailView: View {
     @State private var sharingError: String?
     @State private var showLeaveConfirm = false
     @State private var showAddRecipe = false
+    @State private var recipeToEdit: Recipe?
 
     private var list: GroceryList? {
         listViewModel.lists.first { $0.id == listId }
@@ -146,7 +147,11 @@ struct ListDetailView: View {
                 }
             }
             .sheet(isPresented: $showAddRecipe) {
-                AddRecipeSheet(listId: listId)
+                RecipeEditSheet(listId: listId, existing: nil)
+                    .environmentObject(listViewModel)
+            }
+            .sheet(item: $recipeToEdit) { recipe in
+                RecipeEditSheet(listId: listId, existing: recipe)
                     .environmentObject(listViewModel)
             }
             .sheet(isPresented: Binding(
@@ -292,7 +297,7 @@ struct ListDetailView: View {
             if !list.recipes.isEmpty {
                 Section("Recipes") {
                     ForEach(list.recipes) { recipe in
-                        RecipeRow(recipe: recipe, listId: listId)
+                        RecipeRow(recipe: recipe, listId: listId, onEdit: { recipeToEdit = recipe })
                             .environmentObject(listViewModel)
                     }
                     .onDelete { offsets in
@@ -629,6 +634,7 @@ struct StorePickerSheet: View {
 struct RecipeRow: View {
     let recipe: Recipe
     let listId: UUID
+    let onEdit: () -> Void
     @EnvironmentObject var listViewModel: ListViewModel
     @State private var isExpanded: Bool = true
 
@@ -677,20 +683,43 @@ struct RecipeRow: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .contextMenu {
+            Button {
+                onEdit()
+            } label: {
+                Label("Edit Recipe", systemImage: "pencil")
+            }
+            Divider()
+            Button(role: .destructive) {
+                listViewModel.deleteRecipe(recipe, from: listId)
+            } label: {
+                Label("Delete Recipe", systemImage: "trash")
+            }
+        }
     }
 }
 
-// MARK: - Add recipe sheet
+// MARK: - Recipe edit sheet (handles both create and edit)
 
-struct AddRecipeSheet: View {
+struct RecipeEditSheet: View {
     let listId: UUID
+    let existing: Recipe?
     @EnvironmentObject var listViewModel: ListViewModel
     @Environment(\.dismiss) var dismiss
 
-    @State private var recipeName = ""
+    @State private var recipeName: String
     @State private var itemName = ""
-    @State private var items: [ListItem] = []
+    @State private var items: [ListItem]
     @FocusState private var isItemFieldFocused: Bool
+
+    init(listId: UUID, existing: Recipe?) {
+        self.listId   = listId
+        self.existing = existing
+        _recipeName   = State(initialValue: existing?.name ?? "")
+        _items        = State(initialValue: existing?.items ?? [])
+    }
+
+    private var isEditing: Bool { existing != nil }
 
     var body: some View {
         NavigationStack {
@@ -723,22 +752,26 @@ struct AddRecipeSheet: View {
                     }
                 }
             }
-            .navigationTitle("New Recipe")
+            .navigationTitle(isEditing ? "Edit Recipe" : "New Recipe")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
+                    Button(isEditing ? "Save" : "Add") {
                         let name = recipeName.trimmingCharacters(in: .whitespaces)
                         guard !name.isEmpty, !items.isEmpty else { return }
-                        listViewModel.addRecipe(to: listId, name: name, items: items)
+                        if isEditing, var updated = existing {
+                            updated.name  = name
+                            updated.items = items
+                            listViewModel.updateRecipe(updated, in: listId)
+                        } else {
+                            listViewModel.addRecipe(to: listId, name: name, items: items)
+                        }
                         dismiss()
                     }
-                    .disabled(
-                        recipeName.trimmingCharacters(in: .whitespaces).isEmpty || items.isEmpty
-                    )
+                    .disabled(recipeName.trimmingCharacters(in: .whitespaces).isEmpty || items.isEmpty)
                 }
             }
         }
