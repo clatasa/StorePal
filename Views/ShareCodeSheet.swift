@@ -8,7 +8,7 @@ struct ShareCodeSheet: View {
     @State private var copied = false
 
     private var inviteText: String {
-        "Join my "\(listName)" grocery list on StorePal! Use code: \(code)"
+        "Join my \(listName) grocery list on StorePal! Use code: \(code)"
     }
 
     var body: some View {
@@ -24,7 +24,7 @@ struct ShareCodeSheet: View {
                 VStack(spacing: 8) {
                     Text("Share this code")
                         .font(.title2.weight(.semibold))
-                    Text("Anyone with this code can join "\(listName)"")
+                    Text("Anyone with this code can join \(listName)")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

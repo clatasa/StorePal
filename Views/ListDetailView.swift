@@ -144,8 +144,13 @@ struct ListDetailView: View {
                     listViewModel.addItem(to: listId, name: name, note: note)
                 }
             }
-            .sheet(item: $shareCode) { code in
-                ShareCodeSheet(code: code, listName: list?.name ?? "")
+            .sheet(isPresented: Binding(
+                get: { shareCode != nil },
+                set: { if !$0 { shareCode = nil } }
+            )) {
+                if let code = shareCode {
+                    ShareCodeSheet(code: code, listName: list?.name ?? "")
+                }
             }
             .alert("Sharing Error", isPresented: Binding(
                 get: { sharingError != nil },

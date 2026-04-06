@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EF31723F2F8411C400A34884 /* ShareCodeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF31723E2F8411C400A34884 /* ShareCodeSheet.swift */; };
+		EF3172412F84154400A34884 /* JoinListSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF3172402F84154400A34884 /* JoinListSheet.swift */; };
 		EF56D6922F7F114E00552E8F /* BarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF56D6912F7F114E00552E8F /* BarcodeScannerView.swift */; };
 		EF56D6942F7F12E200552E8F /* CloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF56D6932F7F12E200552E8F /* CloudKitService.swift */; };
 		EF56D6962F7F12F300552E8F /* OpenFoodFactsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF56D6952F7F12F300552E8F /* OpenFoodFactsService.swift */; };
@@ -43,6 +45,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		EF31723E2F8411C400A34884 /* ShareCodeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareCodeSheet.swift; sourceTree = "<group>"; };
+		EF3172402F84154400A34884 /* JoinListSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JoinListSheet.swift; sourceTree = "<group>"; };
 		EF56D6912F7F114E00552E8F /* BarcodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeScannerView.swift; sourceTree = "<group>"; };
 		EF56D6932F7F12E200552E8F /* CloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitService.swift; sourceTree = "<group>"; };
 		EF56D6952F7F12F300552E8F /* OpenFoodFactsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenFoodFactsService.swift; sourceTree = "<group>"; };
@@ -162,6 +166,8 @@
 				EF70CC5F2F76C71A0078DCB9 /* SettingsSheet.swift */,
 				EF70CC732F7B374F0078DCB9 /* ListDetailView.swift */,
 				EF56D6912F7F114E00552E8F /* BarcodeScannerView.swift */,
+				EF31723E2F8411C400A34884 /* ShareCodeSheet.swift */,
+				EF3172402F84154400A34884 /* JoinListSheet.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -306,6 +312,8 @@
 				EF56D6922F7F114E00552E8F /* BarcodeScannerView.swift in Sources */,
 				EF70CC612F76C71A0078DCB9 /* StorePalApp.swift in Sources */,
 				EF70CC702F7B373F0078DCB9 /* GroceryList.swift in Sources */,
+				EF3172412F84154400A34884 /* JoinListSheet.swift in Sources */,
+				EF31723F2F8411C400A34884 /* ShareCodeSheet.swift in Sources */,
 				EF70CC722F7B374F0078DCB9 /* ListViewModel.swift in Sources */,
 				EF70CC742F7B374F0078DCB9 /* ListDetailView.swift in Sources */,
 				EF70CC622F76C71A0078DCB9 /* StoreViewModel.swift in Sources */,

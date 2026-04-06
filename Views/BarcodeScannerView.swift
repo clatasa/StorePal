@@ -46,6 +46,8 @@ struct BarcodeScannerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var state: ScannerState = .scanning
     @State private var manualName = ""
+    @State private var pluCode = ""
+    @FocusState private var isPluFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -123,7 +125,34 @@ struct BarcodeScannerView: View {
         VStack(spacing: 16) {
             switch state {
             case .scanning:
-                EmptyView()
+                VStack(spacing: 10) {
+                    Text("Produce? Enter PLU code")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.8))
+                    HStack(spacing: 10) {
+                        TextField("4–5 digit PLU", text: $pluCode)
+                            .keyboardType(.numberPad)
+                            .focused($isPluFocused)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(maxWidth: 130)
+                            .onChange(of: pluCode) { _, newValue in
+                                pluCode = String(newValue.filter(\.isNumber).prefix(5))
+                            }
+                        Button("Look Up") {
+                            let code = pluCode.trimmingCharacters(in: .whitespaces)
+                            guard code.count >= 4 else { return }
+                            isPluFocused = false
+                            state = .loading(barcode: code)
+                            Task { await lookupProduct(barcode: code) }
+                        }
+                        .buttonStyle(PanelButtonStyle(filled: true))
+                        .disabled(pluCode.count < 4)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .padding(.horizontal)
 
             case .locked(let barcode):
                 VStack(spacing: 10) {
@@ -132,6 +161,7 @@ struct BarcodeScannerView: View {
                         .foregroundStyle(.white)
                     HStack(spacing: 12) {
                         Button("Scan Again") {
+                            pluCode = ""
                             state = .scanning
                         }
                         .buttonStyle(PanelButtonStyle(filled: false))
