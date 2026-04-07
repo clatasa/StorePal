@@ -201,7 +201,7 @@ struct ListDetailView: View {
                             UIApplication.shared.open(googleURL)
                         } else {
                             // Fall back to Apple Maps if Google Maps app is not installed
-                            let item = MKMapItem(placemark: MKPlacemark(coordinate: store.coordinate))
+                            let item = MKMapItem(location: CLLocation(latitude: store.latitude, longitude: store.longitude), address: nil)
                             item.name = store.name
                             item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
                         }

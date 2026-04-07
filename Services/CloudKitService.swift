@@ -355,7 +355,7 @@ final class CloudKitService: ObservableObject {
 
     func unsubscribe(cloudListId: String) async {
         let subID = "sub-\(cloudListId)"
-        try? await publicDB.deleteSubscription(withID: subID)
+        _ = try? await publicDB.deleteSubscription(withID: subID)
     }
 
     // MARK: - Share code helper

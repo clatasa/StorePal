@@ -95,10 +95,10 @@ class StoreViewModel: ObservableObject {
 
         do {
             let response = try await MKLocalSearch(request: request).start()
-            searchResults = response.mapItems.compactMap { item in
+            searchResults = response.mapItems.compactMap { item -> GroceryStore? in
                 guard let name = item.name else { return nil }
-                let coord = item.placemark.coordinate
-                let address = item.placemark.title ?? item.placemark.thoroughfare ?? ""
+                let coord = item.location.coordinate
+                let address = item.address?.fullAddress ?? "Unknown Address"
                 return GroceryStore(
                     // Stable ID: name + CRC32 hash of address
                     id: "\(name)_\(crc32(address))",

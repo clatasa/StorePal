@@ -172,7 +172,7 @@ class ListViewModel: ObservableObject {
         lists[i].isMine = true
         lists[i].shareCode = code
 
-        try? await CloudKitService.shared.subscribeToListChanges(cloudListId: cloudListId)
+        _ = try? await CloudKitService.shared.subscribeToListChanges(cloudListId: cloudListId)
         return code
     }
 
@@ -199,7 +199,7 @@ class ListViewModel: ObservableObject {
         newList.recipes = recipes
         lists.append(newList)
 
-        try? await CloudKitService.shared.subscribeToListChanges(cloudListId: cloudListId)
+        _ = try? await CloudKitService.shared.subscribeToListChanges(cloudListId: cloudListId)
     }
 
     /// Pull latest items and recipes from CloudKit for every shared list.
@@ -220,7 +220,7 @@ class ListViewModel: ObservableObject {
     /// Owner: deletes CloudKit records and converts list back to local. Participant: removes local copy entirely.
     func leaveSharedList(_ list: GroceryList) async {
         guard let cloudListId = list.cloudListId else { return }
-        try? await CloudKitService.shared.leaveList(cloudListId: cloudListId, isOwner: list.isMine)
+        _ = try? await CloudKitService.shared.leaveList(cloudListId: cloudListId, isOwner: list.isMine)
         await CloudKitService.shared.unsubscribe(cloudListId: cloudListId)
 
         if list.isMine {
