@@ -15,7 +15,7 @@ class ListViewModel: ObservableObject {
     // MARK: - List management
 
     func addList(name: String) {
-        lists.append(GroceryList(name: name))
+        lists.append(GroceryList(name: name.sanitized))
     }
 
     func deleteList(_ list: GroceryList) {
@@ -24,7 +24,7 @@ class ListViewModel: ObservableObject {
 
     func renameList(_ list: GroceryList, to name: String) {
         guard let i = lists.firstIndex(where: { $0.id == list.id }) else { return }
-        lists[i].name = name
+        lists[i].name = name.sanitized
     }
 
     // MARK: - Item management
@@ -32,8 +32,9 @@ class ListViewModel: ObservableObject {
     func addItem(to listId: UUID, name: String, quantity: Int? = nil,
                  weightValue: Double? = nil, weightUnit: WeightUnit = .lbs, note: String? = nil) {
         guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
-        let item = ListItem(name: name, quantity: quantity,
-                            weightValue: weightValue, weightUnit: weightUnit, note: note)
+        let item = ListItem(name: name.sanitized, quantity: quantity,
+                            weightValue: weightValue, weightUnit: weightUnit,
+                            note: note?.sanitized)
         lists[li].items.append(item)
         let list = lists[li]
         let index = list.items.count - 1
@@ -43,8 +44,11 @@ class ListViewModel: ObservableObject {
     func updateItem(_ item: ListItem, in listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }),
               let ii = lists[li].items.firstIndex(where: { $0.id == item.id }) else { return }
-        lists[li].items[ii] = item
-        pushItemChange(item, sortOrder: ii, in: lists[li])
+        var clean = item
+        clean.name = item.name.sanitized
+        clean.note = item.note?.sanitized
+        lists[li].items[ii] = clean
+        pushItemChange(clean, sortOrder: ii, in: lists[li])
     }
 
     func bindList(_ listId: UUID, to storeId: String?) {
@@ -111,7 +115,10 @@ class ListViewModel: ObservableObject {
 
     func addRecipe(to listId: UUID, name: String, items: [ListItem]) {
         guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
-        let recipe = Recipe(name: name, items: items)
+        let cleanItems = items.map { item -> ListItem in
+            var c = item; c.name = item.name.sanitized; return c
+        }
+        let recipe = Recipe(name: name.sanitized, items: cleanItems)
         lists[li].recipes.append(recipe)
         pushRecipeChange(recipe, sortOrder: lists[li].recipes.count - 1, in: lists[li])
     }
@@ -119,8 +126,13 @@ class ListViewModel: ObservableObject {
     func updateRecipe(_ recipe: Recipe, in listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }),
               let ri = lists[li].recipes.firstIndex(where: { $0.id == recipe.id }) else { return }
-        lists[li].recipes[ri] = recipe
-        pushRecipeChange(recipe, sortOrder: ri, in: lists[li])
+        var clean = recipe
+        clean.name = recipe.name.sanitized
+        clean.items = recipe.items.map { item -> ListItem in
+            var c = item; c.name = item.name.sanitized; return c
+        }
+        lists[li].recipes[ri] = clean
+        pushRecipeChange(clean, sortOrder: ri, in: lists[li])
     }
 
     func deleteRecipe(_ recipe: Recipe, from listId: UUID) {
@@ -290,5 +302,15 @@ class ListViewModel: ObservableObject {
            let loaded = try? JSONDecoder().decode([GroceryList].self, from: data) {
             lists = loaded
         }
+    }
+}
+
+// MARK: - String sanitization
+
+private extension String {
+    /// Strips control characters (null bytes, tabs, newlines) while preserving regular spaces.
+    var sanitized: String {
+        filter { $0 != "\0" && (!$0.isWhitespace || $0 == " ") }
+            .trimmingCharacters(in: .whitespaces)
     }
 }
