@@ -120,9 +120,9 @@ final class CloudKitService: ObservableObject {
             throw CloudKitError.saveFailed(error)
         }
 
-        // Push all current items
+        // Push all current items — must use "list-<uuid>" to match ListViewModel's cloudListId format.
         for (index, item) in items.enumerated() {
-            try await saveItem(item, cloudListId: listId.uuidString, sortOrder: index)
+            try await saveItem(item, cloudListId: "list-\(listId.uuidString)", sortOrder: index)
         }
 
         return code
@@ -132,7 +132,7 @@ final class CloudKitService: ObservableObject {
 
     /// Returns the `cloudListId` (record name) for the joined list.
     func joinList(shareCode: String) async throws -> (cloudListId: String, listName: String) {
-        guard let userID = currentUserID else { throw CloudKitError.notAuthenticated(nil) }
+        guard currentUserID != nil else { throw CloudKitError.notAuthenticated(nil) }
 
         let predicate = NSPredicate(format: "%K == %@", Field.shareCode, shareCode.uppercased())
         let query = CKQuery(recordType: RecordType.sharedList, predicate: predicate)
@@ -149,18 +149,8 @@ final class CloudKitService: ObservableObject {
             throw CloudKitError.listNotFound
         }
 
-        // Add this user to participantIDs
-        var participants = record[Field.participantIDs] as? [String] ?? []
-        if !participants.contains(userID) {
-            participants.append(userID)
-            record[Field.participantIDs] = participants as CKRecordValue
-            do {
-                try await publicDB.save(record)
-            } catch {
-                throw CloudKitError.saveFailed(error)
-            }
-        }
-
+        // Participants are tracked locally only — writing back to the owner's record
+        // is not permitted in CloudKit's public database.
         let listName = record[Field.listName] as? String ?? "Shared List"
         return (cloudListId: recordID.recordName, listName: listName)
     }
@@ -230,13 +220,11 @@ final class CloudKitService: ObservableObject {
 
     // MARK: - Leave / stop sharing
 
-    /// Owner: deletes the list and all items.  Participant: removes self from participants.
+    /// Owner: deletes the list and all items from CloudKit.  Participant: local removal only.
     func leaveList(cloudListId: String, isOwner: Bool) async throws {
-        guard let userID = currentUserID else { throw CloudKitError.notAuthenticated(nil) }
-
-        let listRecordID = CKRecord.ID(recordName: cloudListId)
-
         if isOwner {
+            guard currentUserID != nil else { throw CloudKitError.notAuthenticated(nil) }
+            let listRecordID = CKRecord.ID(recordName: cloudListId)
             // Delete all item records
             let predicate = NSPredicate(format: "%K == %@", Field.cloudListId, cloudListId)
             let query = CKQuery(recordType: RecordType.sharedItem, predicate: predicate)
@@ -248,15 +236,9 @@ final class CloudKitService: ObservableObject {
             }
             // Delete list record
             try await publicDB.deleteRecord(withID: listRecordID)
-        } else {
-            // Remove self from participants
-            if let record = try? await publicDB.record(for: listRecordID) {
-                var participants = record[Field.participantIDs] as? [String] ?? []
-                participants.removeAll { $0 == userID }
-                record[Field.participantIDs] = participants as CKRecordValue
-                try await publicDB.save(record)
-            }
         }
+        // Participants can't write to the owner's record, so leaving is local-only.
+        // The list is removed from UserDefaults by ListViewModel after this returns.
     }
 
     // MARK: - Subscriptions (real-time push)
