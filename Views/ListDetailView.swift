@@ -111,6 +111,15 @@ struct ListDetailView: View {
                             Label("Clear Completed", systemImage: "checkmark.circle")
                         }
                         .disabled(!hasCompletedItems)
+                        Divider()
+                        Button(role: .destructive) {
+                            if let list {
+                                listViewModel.deleteList(list)
+                            }
+                            dismiss()
+                        } label: {
+                            Label("Delete List", systemImage: "trash")
+                        }
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }

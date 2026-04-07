@@ -20,22 +20,17 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    miniMapCard
                     listsCard
                     favoritesCard
+                    miniMapCard
                 }
                 .padding()
             }
-            .navigationTitle("StorePal")
+            .navigationTitle("Store Pal")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { showSettings = true } label: {
                         Image(systemName: "gearshape")
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showSearch = true } label: {
-                        Label("Find Stores", systemImage: "magnifyingglass")
                     }
                 }
             }
@@ -150,6 +145,11 @@ struct HomeView: View {
                 Text("\(viewModel.favorites.count) / \(viewModel.maxFavorites)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Button { showSearch = true } label: {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.blue)
+                        .imageScale(.large)
+                }
             }
             .padding(.horizontal)
             .padding(.vertical, 6)
