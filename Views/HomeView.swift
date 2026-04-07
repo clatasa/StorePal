@@ -107,17 +107,15 @@ struct HomeView: View {
             geofenceBadge.padding(10)
         }
         .overlay(alignment: .bottomLeading) {
-            if viewModel.favorites.isEmpty {
-                Button { showSearch = true } label: {
-                    Label("Find Stores", systemImage: "magnifyingglass")
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(.blue, in: Capsule())
-                        .foregroundStyle(.white)
-                }
-                .padding(10)
+            Button { showSearch = true } label: {
+                Label("Find Stores", systemImage: "magnifyingglass")
+                    .font(.caption.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.blue, in: Capsule())
+                    .foregroundStyle(.white)
             }
+            .padding(10)
         }
     }
 

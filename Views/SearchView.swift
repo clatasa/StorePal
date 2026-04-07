@@ -6,16 +6,18 @@ struct SearchView: View {
     @Environment(\.dismiss) var dismiss
     @State private var mapPosition: MapCameraPosition = .userLocation(fallback: .automatic)
     @State private var searchQuery: String = "grocery store"
+    @State private var selectedStoreId: String?
 
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 // Full-screen interactive map
-                Map(position: $mapPosition) {
+                Map(position: $mapPosition, selection: $selectedStoreId) {
                     UserAnnotation()
                     ForEach(viewModel.searchResults) { store in
                         Marker(store.name, coordinate: store.coordinate)
                             .tint(viewModel.favoriteIds.contains(store.id) ? .yellow : .blue)
+                            .tag(store.id)
                     }
                 }
                 .mapControls {
@@ -24,8 +26,21 @@ struct SearchView: View {
                 }
                 .ignoresSafeArea(edges: .top)
 
-                // Results panel
                 resultsPanel
+            }
+            // Single source of truth: whenever selectedStoreId changes (from map tap
+            // OR list tap) animate the map camera to that store.
+            .onChange(of: selectedStoreId) { _, id in
+                guard let id,
+                      let store = viewModel.searchResults.first(where: { $0.id == id })
+                else { return }
+                withAnimation {
+                    mapPosition = .region(MKCoordinateRegion(
+                        center: store.coordinate,
+                        latitudinalMeters: 500,
+                        longitudinalMeters: 500
+                    ))
+                }
             }
             .navigationTitle("Find Stores")
             .navigationBarTitleDisplayMode(.inline)
@@ -45,7 +60,6 @@ struct SearchView: View {
             }
         }
         .task { await viewModel.searchNearby(query: searchQuery) }
-        // Show error as alert
         .alert("Search Error", isPresented: Binding(
             get: { viewModel.errorMessage != nil },
             set: { if !$0 { viewModel.errorMessage = nil } }
@@ -117,20 +131,30 @@ struct SearchView: View {
                         .padding(.vertical, 6)
                 }
 
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(viewModel.searchResults) { store in
-                            StoreRow(
-                                store: store,
-                                isFavorite: viewModel.favoriteIds.contains(store.id),
-                                canAdd: viewModel.canAddFavorite,
-                                onToggle: { viewModel.toggleFavorite(store) }
-                            )
-                            Divider().padding(.leading, 16)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(viewModel.searchResults) { store in
+                                StoreRow(
+                                    store: store,
+                                    isFavorite: viewModel.favoriteIds.contains(store.id),
+                                    canAdd: viewModel.canAddFavorite,
+                                    onToggle: { viewModel.toggleFavorite(store) },
+                                    isSelected: selectedStoreId == store.id,
+                                    onTap: { selectedStoreId = store.id }
+                                )
+                                .id(store.id)
+                                Divider().padding(.leading, 16)
+                            }
                         }
                     }
+                    .frame(maxHeight: 280)
+                    // Map marker tapped → scroll list to that store
+                    .onChange(of: selectedStoreId) { _, id in
+                        guard let id else { return }
+                        withAnimation { proxy.scrollTo(id, anchor: .top) }
+                    }
                 }
-                .frame(maxHeight: 280)
             }
         }
         .frame(maxWidth: .infinity)
