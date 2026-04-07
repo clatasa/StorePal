@@ -73,6 +73,8 @@ struct ListDetailView: View {
                         } else {
                             Button {
                                 guard let l = list else { return }
+                                // Flush any pending text-field item so it's included in the share
+                                addItem()
                                 isSharingLoading = true
                                 Task {
                                     do {

@@ -172,6 +172,10 @@ class ListViewModel: ObservableObject {
         lists[i].isMine = true
         lists[i].shareCode = code
 
+        // Re-push the live item list in case items were added while the CloudKit
+        // round-trip was in flight (the snapshot used above may be stale).
+        pushAllItems(for: lists[i])
+
         _ = try? await CloudKitService.shared.subscribeToListChanges(cloudListId: cloudListId)
         return code
     }
