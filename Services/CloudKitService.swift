@@ -7,6 +7,7 @@ import Combine
 enum CloudKitError: LocalizedError {
     case notAuthenticated(String?)
     case listNotFound
+    case alreadyJoined
     case saveFailed(Error)
     case fetchFailed(Error)
 
@@ -14,7 +15,8 @@ enum CloudKitError: LocalizedError {
         switch self {
         case .notAuthenticated(let msg):
             return msg ?? "Sign in to iCloud in Settings to use Shared Lists."
-        case .listNotFound:        return "No shared list found with that code."
+        case .listNotFound:   return "No list found with that code. Double-check and try again."
+        case .alreadyJoined:  return "You've already joined this list."
         case .saveFailed(let e):   return "Save failed: \(e.localizedDescription)"
         case .fetchFailed(let e):  return "Fetch failed: \(e.localizedDescription)"
         }
@@ -24,8 +26,9 @@ enum CloudKitError: LocalizedError {
 // MARK: - Record type / field constants
 
 private enum RecordType {
-    static let sharedList = "SharedList"
-    static let sharedItem = "SharedListItem"
+    static let sharedList   = "SharedList"
+    static let sharedItem   = "SharedListItem"
+    static let sharedRecipe = "SharedRecipe"
 }
 
 private enum Field {
@@ -37,7 +40,7 @@ private enum Field {
 
     // SharedListItem
     static let cloudListId    = "cloudListId"
-    static let itemId         = "itemId"        // local UUID string
+    static let itemId         = "itemId"
     static let itemName       = "itemName"
     static let isChecked      = "isChecked"
     static let isStaple       = "isStaple"
@@ -47,6 +50,11 @@ private enum Field {
     static let note           = "note"
     static let purchasedDate  = "purchasedDate"
     static let sortOrder      = "sortOrder"
+
+    // SharedRecipe
+    static let recipeId       = "recipeId"
+    static let recipeName     = "recipeName"
+    static let itemsJSON      = "itemsJSON"     // JSON-encoded [ListItem]
 }
 
 // MARK: - CloudKitService
@@ -103,7 +111,7 @@ final class CloudKitService: ObservableObject {
     // MARK: - Share a list
 
     /// Publishes `list` to CloudKit and returns the 6-char share code.
-    func shareList(name: String, listId: UUID, items: [ListItemPayload]) async throws -> String {
+    func shareList(name: String, listId: UUID, items: [ListItemPayload], recipes: [Recipe]) async throws -> String {
         guard let ownerID = currentUserID else { throw CloudKitError.notAuthenticated(nil) }
 
         let code = generateShareCode()
@@ -120,9 +128,14 @@ final class CloudKitService: ObservableObject {
             throw CloudKitError.saveFailed(error)
         }
 
-        // Push all current items — must use "list-<uuid>" to match ListViewModel's cloudListId format.
+        let cloudListId = "list-\(listId.uuidString)"
+
         for (index, item) in items.enumerated() {
-            try await saveItem(item, cloudListId: "list-\(listId.uuidString)", sortOrder: index)
+            try await saveItem(item, cloudListId: cloudListId, sortOrder: index)
+        }
+
+        for (index, recipe) in recipes.enumerated() {
+            try await saveRecipe(recipe, cloudListId: cloudListId, sortOrder: index)
         }
 
         return code
@@ -134,7 +147,12 @@ final class CloudKitService: ObservableObject {
     func joinList(shareCode: String) async throws -> (cloudListId: String, listName: String) {
         guard currentUserID != nil else { throw CloudKitError.notAuthenticated(nil) }
 
-        let predicate = NSPredicate(format: "%K == %@", Field.shareCode, shareCode.uppercased())
+        // Validate format before touching CloudKit — guards against corrupted deep-link
+        // values or LLDB async-frame misreads reaching the query engine.
+        let sanitized = shareCode.uppercased().filter { $0.isLetter || $0.isNumber }
+        guard sanitized.count == 6 else { throw CloudKitError.listNotFound }
+
+        let predicate = NSPredicate(format: "%K == %@", Field.shareCode, sanitized)
         let query = CKQuery(recordType: RecordType.sharedList, predicate: predicate)
 
         let result: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
@@ -164,7 +182,7 @@ final class CloudKitService: ObservableObject {
 
         let result: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
         do {
-            result = try await publicDB.records(matching: query)
+            result = try await publicDB.records(matching: query, resultsLimit: 500)
         } catch {
             throw CloudKitError.fetchFailed(error)
         }
@@ -218,6 +236,66 @@ final class CloudKitService: ObservableObject {
         }
     }
 
+    // MARK: - Recipe CRUD
+
+    func saveRecipe(_ recipe: Recipe, cloudListId: String, sortOrder: Int) async throws {
+        let recordID = CKRecord.ID(recordName: "recipe-\(cloudListId)-\(recipe.id.uuidString)")
+        let record: CKRecord
+        if let existing = try? await publicDB.record(for: recordID) {
+            record = existing
+        } else {
+            record = CKRecord(recordType: RecordType.sharedRecipe, recordID: recordID)
+        }
+
+        let itemsData  = (try? JSONEncoder().encode(recipe.items)) ?? Data()
+        let itemsJSON  = String(data: itemsData, encoding: .utf8) ?? "[]"
+
+        record[Field.cloudListId] = cloudListId
+        record[Field.recipeId]    = recipe.id.uuidString
+        record[Field.recipeName]  = recipe.name
+        record[Field.itemsJSON]   = itemsJSON
+        record[Field.sortOrder]   = sortOrder
+
+        do {
+            try await publicDB.save(record)
+        } catch {
+            throw CloudKitError.saveFailed(error)
+        }
+    }
+
+    func fetchRecipes(cloudListId: String) async throws -> [Recipe] {
+        let predicate = NSPredicate(format: "%K == %@", Field.cloudListId, cloudListId)
+        let query = CKQuery(recordType: RecordType.sharedRecipe, predicate: predicate)
+        query.sortDescriptors = [NSSortDescriptor(key: Field.sortOrder, ascending: true)]
+
+        let result: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
+        do {
+            result = try await publicDB.records(matching: query, resultsLimit: 200)
+        } catch {
+            throw CloudKitError.fetchFailed(error)
+        }
+
+        return result.matchResults.compactMap { _, recordResult in
+            guard let record    = try? recordResult.get(),
+                  let recipeId  = record[Field.recipeId]   as? String,
+                  let name      = record[Field.recipeName] as? String,
+                  let json      = record[Field.itemsJSON]  as? String,
+                  let data      = json.data(using: .utf8),
+                  let items     = try? JSONDecoder().decode([ListItem].self, from: data)
+            else { return nil }
+            return Recipe(id: UUID(uuidString: recipeId) ?? UUID(), name: name, items: items)
+        }
+    }
+
+    func deleteRecipe(recipeId: String, cloudListId: String) async throws {
+        let recordID = CKRecord.ID(recordName: "recipe-\(cloudListId)-\(recipeId)")
+        do {
+            try await publicDB.deleteRecord(withID: recordID)
+        } catch {
+            throw CloudKitError.saveFailed(error)
+        }
+    }
+
     // MARK: - Leave / stop sharing
 
     /// Owner: deletes the list and all items from CloudKit.  Participant: local removal only.
@@ -225,15 +303,22 @@ final class CloudKitService: ObservableObject {
         if isOwner {
             guard currentUserID != nil else { throw CloudKitError.notAuthenticated(nil) }
             let listRecordID = CKRecord.ID(recordName: cloudListId)
-            // Delete all item records
             let predicate = NSPredicate(format: "%K == %@", Field.cloudListId, cloudListId)
-            let query = CKQuery(recordType: RecordType.sharedItem, predicate: predicate)
-            if let result = try? await publicDB.records(matching: query) {
+
+            // Delete all item records
+            let itemQuery = CKQuery(recordType: RecordType.sharedItem, predicate: predicate)
+            if let result = try? await publicDB.records(matching: itemQuery) {
                 let ids = result.matchResults.map { $0.0 }
-                if !ids.isEmpty {
-                    try await publicDB.deleteRecords(withIDs: ids)
-                }
+                if !ids.isEmpty { try await publicDB.deleteRecords(withIDs: ids) }
             }
+
+            // Delete all recipe records
+            let recipeQuery = CKQuery(recordType: RecordType.sharedRecipe, predicate: predicate)
+            if let result = try? await publicDB.records(matching: recipeQuery) {
+                let ids = result.matchResults.map { $0.0 }
+                if !ids.isEmpty { try await publicDB.deleteRecords(withIDs: ids) }
+            }
+
             // Delete list record
             try await publicDB.deleteRecord(withID: listRecordID)
         }
@@ -370,13 +455,14 @@ struct ListItemPayload {
               let name   = record[Field.itemName] as? String else { return nil }
         self.itemId        = itemId
         self.name          = name
-        self.isChecked     = (record[Field.isChecked] as? Int ?? 0) == 1
-        self.isStaple      = (record[Field.isStaple]  as? Int ?? 0) == 1
-        self.quantity      = record[Field.quantity]     as? Int
-        self.weightValue   = record[Field.weightValue]  as? Double
+        // CloudKit returns integers as NSNumber; use boolValue/intValue for reliable bridging
+        self.isChecked     = (record[Field.isChecked] as? NSNumber)?.boolValue ?? false
+        self.isStaple      = (record[Field.isStaple]  as? NSNumber)?.boolValue ?? false
+        self.quantity      = (record[Field.quantity]  as? NSNumber).map { Int(clamping: $0.int64Value) }
+        self.weightValue   = (record[Field.weightValue] as? NSNumber)?.doubleValue
         self.weightUnit    = record[Field.weightUnit]   as? String
         self.note          = record[Field.note]         as? String
         self.purchasedDate = record[Field.purchasedDate] as? Date
-        self.sortOrder     = record[Field.sortOrder]    as? Int ?? 0
+        self.sortOrder     = (record[Field.sortOrder] as? NSNumber)?.intValue ?? 0
     }
 }

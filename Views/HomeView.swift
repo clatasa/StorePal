@@ -12,7 +12,7 @@ struct HomeView: View {
     @State private var storeForRadiusEdit: GroceryStore?
     @State private var showAddList  = false
     @State private var newListName     = ""
-    @State private var showJoinList = false
+    @State private var joinRequest: JoinRequest? = nil
     @State private var miniMapPosition: MapCameraPosition = .automatic
     @State private var selectedMapStore: GroceryStore?
 
@@ -54,10 +54,18 @@ struct HomeView: View {
                 StoreRadiusSheet(store: store, defaultRadius: viewModel.geofenceRadius)
                     .environmentObject(viewModel)
             }
-            .sheet(isPresented: $showJoinList) {
-                JoinListSheet { code in
+            .sheet(item: $joinRequest) { request in
+                JoinListSheet(prefillCode: request.prefillCode) { @MainActor code in
                     try await listViewModel.joinList(shareCode: code)
                 }
+            }
+            .onOpenURL { url in
+                guard url.scheme == "storepal",
+                      url.host == "join",
+                      let code = url.pathComponents.dropFirst().first,
+                      !code.isEmpty
+                else { return }
+                joinRequest = JoinRequest(prefillCode: code.uppercased())
             }
             // Add list alert
             .alert("New List", isPresented: $showAddList) {
@@ -223,7 +231,7 @@ struct HomeView: View {
                     .font(.headline)
                 Spacer()
                 Button {
-                    showJoinList = true
+                    joinRequest = JoinRequest(prefillCode: "")
                 } label: {
                     Image(systemName: "person.badge.plus")
                         .foregroundStyle(.blue)
@@ -409,16 +417,33 @@ struct StoreRow: View {
     }
 }
 
+// MARK: - Join request (sheet item)
+
+struct JoinRequest: Identifiable {
+    let id = UUID()
+    let prefillCode: String
+}
+
 // MARK: - Join shared list sheet
 
 struct JoinListSheet: View {
-    let onJoin: (String) async throws -> Void
+    let prefillCode: String
+    // @MainActor prevents an actor hop when called from Task { @MainActor in },
+    // which was causing Swift to pack the String across executor boundaries and
+    // corrupt its inline storage before it reached CloudKit.
+    let onJoin: @MainActor (String) async throws -> Void
     @Environment(\.dismiss) private var dismiss
 
-    @State private var code = ""
+    @State private var code: String
     @State private var isLoading = false
     @State private var errorMessage: String?
     @FocusState private var isFieldFocused: Bool
+
+    init(prefillCode: String = "", onJoin: @escaping @MainActor (String) async throws -> Void) {
+        self.prefillCode = prefillCode
+        self.onJoin = onJoin
+        _code = State(initialValue: prefillCode)
+    }
 
     var body: some View {
         NavigationStack {
@@ -457,23 +482,29 @@ struct JoinListSheet: View {
                         ProgressView()
                     } else {
                         Button("Join") {
+                            // Capture synchronously on MainActor before entering
+                            // the async context — belt-and-suspenders against any
+                            // remaining @State lifecycle edge cases.
+                            let codeSnapshot = code
                             errorMessage = nil
                             isLoading = true
-                            Task {
+                            Task { @MainActor in
+                                defer { isLoading = false }
                                 do {
-                                    try await onJoin(code)
+                                    try await onJoin(codeSnapshot)
                                     dismiss()
                                 } catch {
                                     errorMessage = error.localizedDescription
                                 }
-                                isLoading = false
                             }
                         }
                         .disabled(code.count < 6)
                     }
                 }
             }
-            .onAppear { isFieldFocused = true }
+            .onAppear {
+                isFieldFocused = code.isEmpty
+            }
         }
     }
 }

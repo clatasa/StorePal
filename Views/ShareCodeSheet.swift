@@ -7,8 +7,8 @@ struct ShareCodeSheet: View {
 
     @State private var copied = false
 
-    private var inviteText: String {
-        "Join my \(listName) grocery list on StorePal! Use code: \(code)"
+    private var deepLink: URL {
+        URL(string: "storepal://join/\(code)")!
     }
 
     var body: some View {
@@ -45,11 +45,11 @@ struct ShareCodeSheet: View {
                 // Action buttons
                 VStack(spacing: 12) {
                     Button {
-                        UIPasteboard.general.string = code
+                        UIPasteboard.general.string = deepLink.absoluteString
                         copied = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
                     } label: {
-                        Label(copied ? "Copied!" : "Copy Code", systemImage: copied ? "checkmark" : "doc.on.doc")
+                        Label(copied ? "Copied!" : "Copy Link", systemImage: copied ? "checkmark" : "link")
                             .font(.body.weight(.semibold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -58,7 +58,11 @@ struct ShareCodeSheet: View {
                     }
                     .animation(.spring(duration: 0.3), value: copied)
 
-                    ShareLink(item: inviteText) {
+                    ShareLink(
+                        item: deepLink,
+                        subject: Text("Join my grocery list"),
+                        message: Text("Join my \"\(listName)\" list on StorePal!")
+                    ) {
                         Label("Share via…", systemImage: "square.and.arrow.up")
                             .font(.body.weight(.semibold))
                             .frame(maxWidth: .infinity)

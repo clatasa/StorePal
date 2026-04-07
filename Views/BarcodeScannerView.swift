@@ -86,7 +86,6 @@ struct BarcodeScannerView: View {
         GeometryReader { geo in
             let w = geo.size.width * 0.72
             let h: CGFloat = 160
-            let x = (geo.size.width  - w) / 2
             let y = (geo.size.height - h) / 2 - 40
 
             ZStack {

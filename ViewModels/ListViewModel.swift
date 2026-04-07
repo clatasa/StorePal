@@ -111,17 +111,21 @@ class ListViewModel: ObservableObject {
 
     func addRecipe(to listId: UUID, name: String, items: [ListItem]) {
         guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
-        lists[li].recipes.append(Recipe(name: name, items: items))
+        let recipe = Recipe(name: name, items: items)
+        lists[li].recipes.append(recipe)
+        pushRecipeChange(recipe, sortOrder: lists[li].recipes.count - 1, in: lists[li])
     }
 
     func updateRecipe(_ recipe: Recipe, in listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }),
               let ri = lists[li].recipes.firstIndex(where: { $0.id == recipe.id }) else { return }
         lists[li].recipes[ri] = recipe
+        pushRecipeChange(recipe, sortOrder: ri, in: lists[li])
     }
 
     func deleteRecipe(_ recipe: Recipe, from listId: UUID) {
         guard let li = lists.firstIndex(where: { $0.id == listId }) else { return }
+        pushRecipeDelete(recipeId: recipe.id, in: lists[li])
         lists[li].recipes.removeAll { $0.id == recipe.id }
     }
 
@@ -159,7 +163,7 @@ class ListViewModel: ObservableObject {
 
         let payloads = list.items.enumerated().map { index, item in item.payload(sortOrder: index) }
         let code = try await CloudKitService.shared.shareList(
-            name: list.name, listId: list.id, items: payloads)
+            name: list.name, listId: list.id, items: payloads, recipes: list.recipes)
 
         guard let i = lists.firstIndex(where: { $0.id == list.id }) else { return code }
         let cloudListId = "list-\(list.id.uuidString)"
@@ -181,36 +185,55 @@ class ListViewModel: ObservableObject {
         let (cloudListId, listName) = try await CloudKitService.shared.joinList(shareCode: shareCode)
 
         // Guard against joining the same list twice
-        guard !lists.contains(where: { $0.cloudListId == cloudListId }) else { return }
+        guard !lists.contains(where: { $0.cloudListId == cloudListId }) else {
+            throw CloudKitError.alreadyJoined
+        }
 
         let payloads = try await CloudKitService.shared.fetchItems(cloudListId: cloudListId)
+        let recipes  = (try? await CloudKitService.shared.fetchRecipes(cloudListId: cloudListId)) ?? []
         var newList = GroceryList(name: listName)
         newList.isShared = true
         newList.cloudListId = cloudListId
         newList.isMine = false
-        newList.items = payloads.map { $0.asListItem }
+        newList.items   = payloads.map { $0.asListItem }
+        newList.recipes = recipes
         lists.append(newList)
 
         try? await CloudKitService.shared.subscribeToListChanges(cloudListId: cloudListId)
     }
 
-    /// Pull latest items from CloudKit for every shared list. Call on launch and on silent push.
+    /// Pull latest items and recipes from CloudKit for every shared list.
     func syncSharedLists() async {
         guard lists.contains(where: { $0.isShared }) else { return }
         for list in lists where list.isShared {
             guard let cloudListId = list.cloudListId else { continue }
-            guard let payloads = try? await CloudKitService.shared.fetchItems(cloudListId: cloudListId) else { continue }
             guard let i = lists.firstIndex(where: { $0.id == list.id }) else { continue }
-            lists[i].items = payloads.map { $0.asListItem }
+            if let payloads = try? await CloudKitService.shared.fetchItems(cloudListId: cloudListId) {
+                lists[i].items = payloads.map { $0.asListItem }
+            }
+            if let recipes = try? await CloudKitService.shared.fetchRecipes(cloudListId: cloudListId) {
+                lists[i].recipes = recipes
+            }
         }
     }
 
-    /// Owner: deletes CloudKit records and local list. Participant: leaves and removes local copy.
+    /// Owner: deletes CloudKit records and converts list back to local. Participant: removes local copy entirely.
     func leaveSharedList(_ list: GroceryList) async {
         guard let cloudListId = list.cloudListId else { return }
         try? await CloudKitService.shared.leaveList(cloudListId: cloudListId, isOwner: list.isMine)
         await CloudKitService.shared.unsubscribe(cloudListId: cloudListId)
-        deleteList(list)
+
+        if list.isMine {
+            // Owner: keep the list locally, just strip the sharing metadata
+            guard let i = lists.firstIndex(where: { $0.id == list.id }) else { return }
+            lists[i].isShared    = false
+            lists[i].cloudListId = nil
+            lists[i].shareCode   = nil
+            lists[i].isMine      = true
+        } else {
+            // Participant: remove the list entirely (it belongs to someone else)
+            deleteList(list)
+        }
     }
 
     // MARK: - Cloud push helpers (fire-and-forget)
@@ -238,6 +261,16 @@ class ListViewModel: ObservableObject {
                                                            sortOrder: index)
             }
         }
+    }
+
+    private func pushRecipeChange(_ recipe: Recipe, sortOrder: Int, in list: GroceryList) {
+        guard list.isShared, let cloudListId = list.cloudListId else { return }
+        Task { try? await CloudKitService.shared.saveRecipe(recipe, cloudListId: cloudListId, sortOrder: sortOrder) }
+    }
+
+    private func pushRecipeDelete(recipeId: UUID, in list: GroceryList) {
+        guard list.isShared, let cloudListId = list.cloudListId else { return }
+        Task { try? await CloudKitService.shared.deleteRecipe(recipeId: recipeId.uuidString, cloudListId: cloudListId) }
     }
 
     // MARK: - Persistence
