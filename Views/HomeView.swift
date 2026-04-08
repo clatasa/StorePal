@@ -351,8 +351,8 @@ struct HomeView: View {
         if favs.count == 1 {
             miniMapPosition = .region(MKCoordinateRegion(
                 center: favs[0].coordinate,
-                latitudinalMeters: 2000,
-                longitudinalMeters: 2000
+                latitudinalMeters: 5000,
+                longitudinalMeters: 5000
             ))
             return
         }
