@@ -100,7 +100,8 @@ extension LocationService: CLLocationManagerDelegate {
         ) else { return }
 
         NotificationService.shared.sendAlert(
-            for: payload.store, listName: payload.listName, itemCount: payload.itemCount
+            for: payload.store, listName: payload.listName,
+            itemCount: payload.itemCount, listId: payload.listId
         )
     }
 
@@ -111,19 +112,19 @@ extension LocationService: CLLocationManagerDelegate {
         stores: [GroceryStore],
         lists: [GroceryList],
         behavior: GeofenceAlertBehavior
-    ) -> (store: GroceryStore, listName: String?, itemCount: Int?)? {
+    ) -> (store: GroceryStore, listName: String?, itemCount: Int?, listId: UUID?)? {
         guard let store = stores.first(where: { $0.id == storeId }) else { return nil }
         switch behavior {
         case .always:
-            return (store, nil, nil)
+            return (store, nil, nil, nil)
         case .linkedList:
             guard let match = lists.first(where: { $0.boundStoreId == store.id })
             else { return nil }
-            return (store, match.name, nil)
+            return (store, match.name, nil, match.id)
         case .itemsNeeded:
             guard let match = lists.first(where: { $0.boundStoreId == store.id && $0.activeCount > 0 })
             else { return nil }
-            return (store, match.name, match.activeCount)
+            return (store, match.name, match.activeCount, match.id)
         }
     }
 

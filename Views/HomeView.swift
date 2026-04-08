@@ -55,12 +55,18 @@ struct HomeView: View {
                 }
             }
             .onOpenURL { url in
-                guard url.scheme == "storepal",
-                      url.host == "join",
-                      let code = url.pathComponents.dropFirst().first,
-                      !code.isEmpty
-                else { return }
-                joinRequest = JoinRequest(prefillCode: code.uppercased())
+                guard url.scheme == "storepal" else { return }
+                let path = url.pathComponents.dropFirst().first ?? ""
+                switch url.host {
+                case "join" where !path.isEmpty:
+                    joinRequest = JoinRequest(prefillCode: path.uppercased())
+                case "list":
+                    if let uuid = UUID(uuidString: path) {
+                        selectedList = listViewModel.lists.first { $0.id == uuid }
+                    }
+                default:
+                    break
+                }
             }
             // Add list alert
             .alert("New List", isPresented: $showAddList) {

@@ -74,6 +74,7 @@ final class GeofenceAlertPayloadTests: XCTestCase {
         XCTAssertEqual(payload?.store.id, s.id)
         XCTAssertNil(payload?.listName)
         XCTAssertNil(payload?.itemCount)
+        XCTAssertNil(payload?.listId)
     }
 
     func testAlwaysFiresEvenWithUnboundList() {
@@ -95,6 +96,7 @@ final class GeofenceAlertPayloadTests: XCTestCase {
         XCTAssertNotNil(payload)
         XCTAssertEqual(payload?.listName, l.name)
         XCTAssertNil(payload?.itemCount)
+        XCTAssertEqual(payload?.listId, l.id)
     }
 
     func testLinkedListSilentWhenNoListBound() {
@@ -124,6 +126,7 @@ final class GeofenceAlertPayloadTests: XCTestCase {
         XCTAssertNotNil(payload)
         XCTAssertEqual(payload?.itemCount, 2)
         XCTAssertEqual(payload?.listName, l.name)
+        XCTAssertEqual(payload?.listId, l.id)
     }
 
     func testItemsNeededSilentWhenAllChecked() {

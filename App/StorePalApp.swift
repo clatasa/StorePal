@@ -2,7 +2,7 @@ internal import SwiftUI
 
 // MARK: - App delegate (silent push → sync shared lists)
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     var onSilentPush: (() async -> Void)?
 
     func application(
@@ -12,7 +12,31 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Required for CloudKit silent push delivery.
         // Silent pushes don't require user permission but do need device token registration.
         application.registerForRemoteNotifications()
+        // Receive notification taps even when the app is in the foreground.
+        UNUserNotificationCenter.current().delegate = self
         return true
+    }
+
+    // Called when the user taps a delivered notification.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        if let listIdString = response.notification.request.content.userInfo["listId"] as? String,
+           let url = URL(string: "storepal://list/\(listIdString)") {
+            UIApplication.shared.open(url)
+        }
+        completionHandler()
+    }
+
+    // Show the notification as a banner even when the app is already open.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
     }
 
     func application(

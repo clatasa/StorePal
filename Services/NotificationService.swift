@@ -53,17 +53,20 @@ class NotificationService: ObservableObject {
         }
     }
 
-    func sendAlert(for store: GroceryStore, listName: String? = nil, itemCount: Int? = nil) {
+    func sendAlert(for store: GroceryStore, listName: String? = nil, itemCount: Int? = nil, listId: UUID? = nil) {
         let content = UNMutableNotificationContent()
         content.title = "Grocery Store Nearby"
         if let listName, let itemCount {
-            content.body = "You're near \(store.name) \(itemCount) item\(itemCount == 1 ? "" : "s") to pick up for \"\(listName)\"."
+            content.body = "You're near \(store.name). \(itemCount) item\(itemCount == 1 ? "" : "s") to pick up for \"\(listName)\"."
         } else if let listName {
             content.body = "You're near \(store.name). Your \"\(listName)\" list is linked here."
         } else {
             content.body = "You're near \(store.name). Don't forget to stop by!"
         }
         content.sound = .default
+        if let listId {
+            content.userInfo = ["listId": listId.uuidString]
+        }
 
         let request = UNNotificationRequest(
             identifier: "geofence-\(store.id)-\(Int(Date().timeIntervalSince1970))",
