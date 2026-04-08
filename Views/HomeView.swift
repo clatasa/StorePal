@@ -83,6 +83,7 @@ struct HomeView: View {
             await viewModel.requestPermissions()
             viewModel.locationService.startUpdatingLocation()
         }
+        .onAppear { updateMiniMapPosition() }
         .onChange(of: viewModel.favorites) { updateMiniMapPosition() }
         .onChange(of: viewModel.locationService.currentLocation) {
             if viewModel.favorites.isEmpty { updateMiniMapPosition() }
@@ -193,8 +194,8 @@ struct HomeView: View {
                                     selectedMapStore = store
                                     miniMapPosition = .region(MKCoordinateRegion(
                                         center: store.coordinate,
-                                        latitudinalMeters: 1500,
-                                        longitudinalMeters: 1500
+                                        latitudinalMeters: 5000,
+                                        longitudinalMeters: 5000
                                     ))
                                 }
                             }
@@ -341,18 +342,18 @@ struct HomeView: View {
             if let loc = viewModel.locationService.currentLocation {
                 miniMapPosition = .region(MKCoordinateRegion(
                     center: loc.coordinate,
-                    latitudinalMeters: 3000,
-                    longitudinalMeters: 3000
+                    latitudinalMeters: 5000,
+                    longitudinalMeters: 5000
                 ))
             }
             return
         }
 
-        if favs.count == 1 {
+        if favs.count >= 1 {
             miniMapPosition = .region(MKCoordinateRegion(
                 center: favs[0].coordinate,
-                latitudinalMeters: 5000,
-                longitudinalMeters: 5000
+                latitudinalMeters: 2000,
+                longitudinalMeters: 2000
             ))
             return
         }
