@@ -88,31 +88,42 @@ extension LocationService: CLLocationManagerDelegate {
         guard
             let storeData = UserDefaults.standard.data(forKey: "favorites"),
             let stores    = try? JSONDecoder().decode([GroceryStore].self, from: storeData),
-            let store     = stores.first(where: { $0.id == region.identifier })
+            let listData  = UserDefaults.standard.data(forKey: "groceryLists"),
+            let lists     = try? JSONDecoder().decode([GroceryList].self, from: listData)
         else { return }
 
         let behaviorRaw = UserDefaults.standard.string(forKey: GeofenceAlertBehavior.defaultsKey) ?? "always"
         let behavior    = GeofenceAlertBehavior(rawValue: behaviorRaw) ?? .always
 
+        guard let payload = Self.alertPayload(
+            storeId: region.identifier, stores: stores, lists: lists, behavior: behavior
+        ) else { return }
+
+        NotificationService.shared.sendAlert(
+            for: payload.store, listName: payload.listName, itemCount: payload.itemCount
+        )
+    }
+
+    /// Pure decision function: returns what to notify (or nil if silent).
+    /// Extracted so it can be unit-tested without side effects.
+    static func alertPayload(
+        storeId: String,
+        stores: [GroceryStore],
+        lists: [GroceryList],
+        behavior: GeofenceAlertBehavior
+    ) -> (store: GroceryStore, listName: String?, itemCount: Int?)? {
+        guard let store = stores.first(where: { $0.id == storeId }) else { return nil }
         switch behavior {
         case .always:
-            NotificationService.shared.sendAlert(for: store)
-
+            return (store, nil, nil)
         case .linkedList:
-            guard
-                let listData = UserDefaults.standard.data(forKey: "groceryLists"),
-                let lists    = try? JSONDecoder().decode([GroceryList].self, from: listData),
-                let match    = lists.first(where: { $0.boundStoreId == store.id })
-            else { return }
-            NotificationService.shared.sendAlert(for: store, listName: match.name)
-
+            guard let match = lists.first(where: { $0.boundStoreId == store.id })
+            else { return nil }
+            return (store, match.name, nil)
         case .itemsNeeded:
-            guard
-                let listData = UserDefaults.standard.data(forKey: "groceryLists"),
-                let lists    = try? JSONDecoder().decode([GroceryList].self, from: listData),
-                let match    = lists.first(where: { $0.boundStoreId == store.id && $0.activeCount > 0 })
-            else { return }
-            NotificationService.shared.sendAlert(for: store, listName: match.name, itemCount: match.activeCount)
+            guard let match = lists.first(where: { $0.boundStoreId == store.id && $0.activeCount > 0 })
+            else { return nil }
+            return (store, match.name, match.activeCount)
         }
     }
 

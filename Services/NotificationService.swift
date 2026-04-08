@@ -57,7 +57,7 @@ class NotificationService: ObservableObject {
         let content = UNMutableNotificationContent()
         content.title = "Grocery Store Nearby"
         if let listName, let itemCount {
-            content.body = "You're near \(store.name) — \(itemCount) item\(itemCount == 1 ? "" : "s") to pick up for \"\(listName)\"."
+            content.body = "You're near \(store.name) \(itemCount) item\(itemCount == 1 ? "" : "s") to pick up for \"\(listName)\"."
         } else if let listName {
             content.body = "You're near \(store.name). Your \"\(listName)\" list is linked here."
         } else {

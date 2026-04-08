@@ -24,6 +24,9 @@
 		EF70CC702F7B373F0078DCB9 /* GroceryList.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC6F2F7B373F0078DCB9 /* GroceryList.swift */; };
 		EF70CC722F7B374F0078DCB9 /* ListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC712F7B374F0078DCB9 /* ListViewModel.swift */; };
 		EF70CC742F7B374F0078DCB9 /* ListDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF70CC732F7B374F0078DCB9 /* ListDetailView.swift */; };
+		EFC513FE2F85D17A0000A1AD /* StorePalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC0B9712F85CC060088C6B4 /* StorePalTests.swift */; };
+		EFC513FF2F85D2460000A1AD /* StorePalUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC0B9742F85CC060088C6B4 /* StorePalUITestsLaunchTests.swift */; };
+		EFC514002F85D28A0000A1AD /* StorePalUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC0B9732F85CC060088C6B4 /* StorePalUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,6 +69,9 @@
 		EF70CC712F7B374F0078DCB9 /* ListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListViewModel.swift; sourceTree = "<group>"; };
 		EF70CC732F7B374F0078DCB9 /* ListDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListDetailView.swift; sourceTree = "<group>"; };
 		EFA057822F7DC68C007BD972 /* StorePal.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = StorePal.entitlements; path = StorePal/StorePal.entitlements; sourceTree = "<group>"; };
+		EFC0B9712F85CC060088C6B4 /* StorePalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StorePalTests.swift; path = StorePalTests/StorePalTests.swift; sourceTree = SOURCE_ROOT; };
+		EFC0B9732F85CC060088C6B4 /* StorePalUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorePalUITests.swift; sourceTree = "<group>"; };
+		EFC0B9742F85CC060088C6B4 /* StorePalUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorePalUITestsLaunchTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +112,8 @@
 				EF70CC5A2F76C71A0078DCB9 /* SETUP.md */,
 				EF70CC5C2F76C71A0078DCB9 /* ViewModels */,
 				EF70CC602F76C71A0078DCB9 /* Views */,
+				EFC0B9722F85CC060088C6B4 /* StorePalTests */,
+				EFC0B9752F85CC060088C6B4 /* StorePalUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -167,6 +175,23 @@
 				EF31723E2F8411C400A34884 /* ShareCodeSheet.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		EFC0B9722F85CC060088C6B4 /* StorePalTests */ = {
+			isa = PBXGroup;
+			children = (
+				EFC0B9712F85CC060088C6B4 /* StorePalTests.swift */,
+			);
+			path = StorePalTests;
+			sourceTree = "<group>";
+		};
+		EFC0B9752F85CC060088C6B4 /* StorePalUITests */ = {
+			isa = PBXGroup;
+			children = (
+				EFC0B9732F85CC060088C6B4 /* StorePalUITests.swift */,
+				EFC0B9742F85CC060088C6B4 /* StorePalUITestsLaunchTests.swift */,
+			);
+			path = StorePalUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -263,6 +288,9 @@
 			);
 			mainGroup = EF70CC052F76C63B0078DCB9;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				EFC513FD2F85CFFA0000A1AD /* XCRemoteSwiftPackageReference "swift-async-algorithms" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EF70CC0F2F76C63B0078DCB9 /* Products */;
 			projectDirPath = "";
@@ -328,6 +356,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EFC513FE2F85D17A0000A1AD /* StorePalTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -335,6 +364,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EFC513FF2F85D2460000A1AD /* StorePalUITestsLaunchTests.swift in Sources */,
+				EFC514002F85D28A0000A1AD /* StorePalUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -563,6 +594,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7CN436JX9N;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
@@ -584,6 +616,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7CN436JX9N;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
 				MARKETING_VERSION = 1.0;
@@ -604,6 +637,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7CN436JX9N;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = SparkMine.StorePalUITests;
@@ -623,6 +657,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7CN436JX9N;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = SparkMine.StorePalUITests;
@@ -677,6 +712,17 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		EFC513FD2F85CFFA0000A1AD /* XCRemoteSwiftPackageReference "swift-async-algorithms" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-async-algorithms.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 	};
 	rootObject = EF70CC062F76C63B0078DCB9 /* Project object */;
 }
