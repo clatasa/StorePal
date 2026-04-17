@@ -518,7 +518,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = StorePal/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Store Pal";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.shopping";
 				INFOPLIST_KEY_NSCameraUsageDescription = "StorePal uses your camera to scan product barcodes.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "StorePal needs background location access to alert you when you pass a saved store.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StorePal uses your location to find nearby grocery stores.";
@@ -560,7 +561,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = StorePal/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Store Pal";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.shopping";
 				INFOPLIST_KEY_NSCameraUsageDescription = "StorePal uses your camera to scan product barcodes.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "StorePal needs background location access to alert you when you pass a saved store.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "StorePal uses your location to find nearby grocery stores.";
