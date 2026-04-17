@@ -123,6 +123,30 @@ struct SettingsSheet: View {
                     LabeledContent("Detection",     value: "CLRegion Monitoring")
                     LabeledContent("Search Area",   value: searchAreaLabel)
                 }
+
+                // ── Support ───────────────────────────────────────────────
+                Section {
+                    Button {
+                        let venmo = URL(string: "venmo://paycharge?txn=pay&recipients=Carlo-Latasa")!
+                        let fallback = URL(string: "https://venmo.com/Carlo-Latasa")!
+                        if UIApplication.shared.canOpenURL(venmo) {
+                            UIApplication.shared.open(venmo)
+                        } else {
+                            UIApplication.shared.open(fallback)
+                        }
+                    } label: {
+                        HStack {
+                            Text("☕ Buy the dev a Coffee! ☕")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } footer: {
+                    Text("Enjoying StorePal? A small would make my day! Venmo: @Carlo-Latasa")
+                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)

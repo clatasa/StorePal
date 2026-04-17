@@ -16,6 +16,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>comgooglemaps</string>
+		<string>venmo</string>
 	</array>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
